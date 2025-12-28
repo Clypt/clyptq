@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 from typing import Dict, List, Optional
 
@@ -237,6 +238,95 @@ class Engine:
 
         orders = sells + buys
         return orders
+
+    def run_live(self, interval_seconds: int = 60, verbose: bool = True) -> None:
+        """
+        Real-time trading loop.
+        Fetches live prices and executes strategy continuously.
+        """
+        if self.mode not in [EngineMode.LIVE, EngineMode.PAPER]:
+            raise ValueError("run_live only works in LIVE or PAPER modes")
+
+        if not hasattr(self.executor, "fetch_prices"):
+            raise ValueError("Executor must have fetch_prices() for live trading")
+
+        universe = self.strategy.universe()
+        if not universe:
+            raise ValueError("Strategy must define universe() for live trading")
+
+        if verbose:
+            print(f"🚀 Starting live trading ({self.mode.value} mode)")
+            print(f"Universe: {universe}")
+            print(f"Rebalance interval: {interval_seconds}s")
+
+        try:
+            while True:
+                timestamp = datetime.utcnow()
+
+                try:
+                    prices = self.executor.fetch_prices(universe)
+
+                    if not prices:
+                        if verbose:
+                            print(f"⚠️  No prices fetched at {timestamp}")
+                        time.sleep(interval_seconds)
+                        continue
+
+                    self._process_live_timestamp(timestamp, prices)
+
+                    if verbose:
+                        equity = self.snapshots[-1].equity if self.snapshots else 0
+                        print(f"✅ {timestamp.strftime('%H:%M:%S')} | Equity: ${equity:.2f}")
+
+                except Exception as e:
+                    if verbose:
+                        print(f"❌ Error at {timestamp}: {e}")
+
+                time.sleep(interval_seconds)
+
+        except KeyboardInterrupt:
+            if verbose:
+                print("\n🛑 Live trading stopped by user")
+
+    def _process_live_timestamp(self, timestamp: datetime, prices: Dict[str, float]) -> None:
+        """Process a single timestamp in live mode (no DataStore needed)."""
+        snapshot = self.portfolio.get_snapshot(timestamp, prices)
+        self.snapshots.append(snapshot)
+
+        if not self._should_rebalance(timestamp):
+            return
+
+        # Compute factors - need historical data for this
+        # For now, skip factor computation in live mode
+        # TODO: Implement live factor computation with rolling window
+        all_scores: Dict[str, float] = {}
+
+        # Simple momentum: use price change as score (placeholder)
+        for symbol in prices.keys():
+            all_scores[symbol] = 1.0  # equal weight for now
+
+        if not all_scores:
+            return
+
+        target_weights = self.constructor.construct(all_scores, self.constraints)
+
+        if not target_weights:
+            return
+
+        current_weights = self.portfolio.get_weights(prices)
+        orders = self._generate_orders(current_weights, target_weights, snapshot.equity, prices)
+
+        if not orders:
+            return
+
+        fills = self.executor.execute(orders, timestamp, prices)
+
+        for fill in fills:
+            try:
+                self.portfolio.apply_fill(fill)
+                self.trades.append(fill)
+            except ValueError as e:
+                print(f"Fill rejected: {e}")
 
     def reset(self) -> None:
         self.portfolio.reset()
