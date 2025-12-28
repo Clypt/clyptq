@@ -24,7 +24,6 @@ from clypt.types import (
 
 
 class Engine:
-    """Trading engine orchestrating factor computation, portfolio construction, and execution."""
 
     def __init__(
         self,
@@ -200,7 +199,6 @@ class Engine:
         equity: float,
         prices: Dict[str, float],
     ) -> List[Order]:
-        """Generate rebalancing orders. Sells first to free cash, applies fee reserve for buys."""
         orders = []
         all_symbols = set(current_weights.keys()) | set(target_weights.keys())
         sells = []
@@ -243,10 +241,7 @@ class Engine:
         return orders
 
     def run_live(self, interval_seconds: int = 60, verbose: bool = True) -> None:
-        """
-        Real-time trading loop.
-        Fetches live prices and executes strategy continuously.
-        """
+        """Real-time loop. Don't fuck this up."""
         if self.mode not in [EngineMode.LIVE, EngineMode.PAPER]:
             raise ValueError("run_live only works in LIVE or PAPER modes")
 
@@ -258,9 +253,9 @@ class Engine:
             raise ValueError("Strategy must define universe() for live trading")
 
         if verbose:
-            print(f"🚀 Starting live trading ({self.mode.value} mode)")
+            print(f"Live trading started ({self.mode.value})")
             print(f"Universe: {universe}")
-            print(f"Rebalance interval: {interval_seconds}s")
+            print(f"Interval: {interval_seconds}s")
 
         try:
             while True:
@@ -271,7 +266,7 @@ class Engine:
 
                     if not prices:
                         if verbose:
-                            print(f"⚠️  No prices fetched at {timestamp}")
+                            print(f"No prices at {timestamp}. API sleeping?")
                         time.sleep(interval_seconds)
                         continue
 
@@ -279,28 +274,25 @@ class Engine:
 
                     if verbose:
                         equity = self.snapshots[-1].equity if self.snapshots else 0
-                        print(f"✅ {timestamp.strftime('%H:%M:%S')} | Equity: ${equity:.2f}")
+                        print(f"{timestamp.strftime('%H:%M:%S')} | ${equity:.2f}")
 
                 except Exception as e:
                     if verbose:
-                        print(f"❌ Error at {timestamp}: {e}")
+                        print(f"Error: {e}")
 
                 time.sleep(interval_seconds)
 
         except KeyboardInterrupt:
             if verbose:
-                print("\n🛑 Live trading stopped by user")
+                print("\nStopped.")
 
     def _process_live_timestamp(self, timestamp: datetime, prices: Dict[str, float]) -> None:
-        """Process a single timestamp in live mode (no DataStore needed)."""
         snapshot = self.portfolio.get_snapshot(timestamp, prices)
         self.snapshots.append(snapshot)
 
-        # Check risk management first
         if self.risk_manager:
-            # Max drawdown kill switch
             if self.risk_manager.check_max_drawdown(snapshot.equity):
-                print(f"🚨 MAX DRAWDOWN HIT! Liquidating all positions")
+                print("MAX DD HIT. dumping everything")
                 liquidate_orders = [
                     Order(symbol=symbol, side=OrderSide.SELL, amount=pos.amount)
                     for symbol, pos in self.portfolio.positions.items()
@@ -314,7 +306,6 @@ class Engine:
                         print(f"Fill rejected: {e}")
                 return
 
-            # Stop-loss / Take-profit checks
             exit_orders = self.risk_manager.check_position_exits(
                 self.portfolio.positions, prices
             )
@@ -330,14 +321,11 @@ class Engine:
         if not self._should_rebalance(timestamp):
             return
 
-        # Compute factors - need historical data for this
-        # For now, skip factor computation in live mode
-        # TODO: Implement live factor computation with rolling window
+        # TODO: live factor computation with rolling window
         all_scores: Dict[str, float] = {}
 
-        # Simple momentum: use price change as score (placeholder)
         for symbol in prices.keys():
-            all_scores[symbol] = 1.0  # equal weight for now
+            all_scores[symbol] = 1.0
 
         if not all_scores:
             return

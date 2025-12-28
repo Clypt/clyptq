@@ -41,27 +41,21 @@ class LiveStrategy(Strategy):
 
 
 def main():
-    print("=" * 60)
-    print("Live Trading Example")
-    print("=" * 60)
-
-    # Paper mode (safe for testing)
     executor = CCXTExecutor(
         exchange_id="binance",
-        api_key="dummy_key",  # not used in paper mode
+        api_key="dummy_key",
         api_secret="dummy_secret",
-        paper_mode=True,  # SIMULATION ONLY
+        paper_mode=True,
         cost_model=CostModel(),
     )
 
     strategy = LiveStrategy()
-    data_store = DataStore()  # empty store for live mode
+    data_store = DataStore()
 
-    # Risk management (optional)
     risk_manager = RiskManager(
-        stop_loss_pct=0.05,      # 5% stop loss
-        take_profit_pct=0.10,     # 10% take profit
-        max_drawdown_pct=0.15     # 15% max drawdown kill switch
+        stop_loss_pct=0.05,
+        take_profit_pct=0.10,
+        max_drawdown_pct=0.15
     )
 
     engine = Engine(
@@ -73,11 +67,6 @@ def main():
         risk_manager=risk_manager,
     )
 
-    print("\n🚀 Starting paper trading...")
-    print("Press Ctrl+C to stop\n")
-
-    # Run live trading loop
-    # Fetches prices every 60 seconds and rebalances based on strategy schedule
     engine.run_live(interval_seconds=60, verbose=True)
 
 

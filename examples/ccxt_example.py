@@ -35,23 +35,16 @@ class SimpleStrategy(Strategy):
 
 
 def main():
-    print("=" * 60)
-    print("CCXT Executor Example")
-    print("=" * 60)
-
-    # Load data
     symbols = ["BTC/USDT", "ETH/USDT", "BNB/USDT"]
     store = load_crypto_data(symbols, days=90)
 
-    # Create strategy
     strategy = SimpleStrategy()
 
-    # Paper mode executor
     executor = CCXTExecutor(
         exchange_id="binance",
-        api_key="test",  # not used in paper mode
+        api_key="test",
         api_secret="test",
-        paper_mode=True,  # simulation only
+        paper_mode=True,
         cost_model=CostModel(),
     )
 
@@ -63,35 +56,18 @@ def main():
         initial_capital=10000.0,
     )
 
-    # Run backtest
     date_range = store.get_date_range()
     end_date = date_range.end
     start_date = end_date - timedelta(days=30)
 
-    print("\nRunning paper mode backtest...")
     result = engine.run_backtest(start=start_date, end=end_date, verbose=True)
 
     print_metrics(result.metrics)
 
-    # Export to SaaS format
-    print("\nExporting to SaaS format...")
     data = result.to_dict()
-    print(f"✅ Equity curve: {len(data['equity_curve'])} points")
-    print(f"✅ Trades: {len(data['trades'])}")
-    print(f"✅ Metrics: {len(data['metrics'])} fields")
+    print(f"\nExported: {len(data['equity_curve'])} points, {len(data['trades'])} trades")
 
-    print("\n" + "=" * 60)
-    print("Paper mode test complete!")
-    print("=" * 60)
-
-    # For live trading, just change paper_mode=False
-    # executor = CCXTExecutor(
-    #     exchange_id="binance",
-    #     api_key="YOUR_REAL_KEY",
-    #     api_secret="YOUR_REAL_SECRET",
-    #     paper_mode=False,
-    #     sandbox=True  # use testnet first!
-    # )
+    # For live: paper_mode=False, sandbox=True
 
 
 if __name__ == "__main__":

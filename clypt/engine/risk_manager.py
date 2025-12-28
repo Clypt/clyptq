@@ -1,7 +1,4 @@
-"""
-Risk management for live trading.
-Stop-loss, take-profit, and max drawdown protection.
-"""
+"""Risk management: SL, TP, max DD."""
 
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -10,8 +7,6 @@ from clypt.types import Order, OrderSide, Position
 
 
 class RiskManager:
-    """Manages risk for live trading."""
-
     def __init__(
         self,
         stop_loss_pct: Optional[float] = None,
@@ -26,7 +21,6 @@ class RiskManager:
     def check_position_exits(
         self, positions: Dict[str, Position], prices: Dict[str, float]
     ) -> List[Order]:
-        """Generate exit orders for positions hitting stop-loss or take-profit."""
         exit_orders = []
 
         for symbol, pos in positions.items():
@@ -52,10 +46,6 @@ class RiskManager:
         return exit_orders
 
     def check_max_drawdown(self, current_equity: float) -> bool:
-        """
-        Check if max drawdown exceeded.
-        Returns True if should liquidate all positions.
-        """
         if not self.max_drawdown_pct:
             return False
 
@@ -70,5 +60,4 @@ class RiskManager:
         return False
 
     def reset(self):
-        """Reset risk manager state."""
         self.peak_equity = 0.0
