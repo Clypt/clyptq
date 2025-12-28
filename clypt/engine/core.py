@@ -6,7 +6,7 @@ import pandas as pd
 from clypt.analytics.metrics import compute_metrics
 from clypt.data.store import DataStore
 from clypt.engine.cost_model import CostModel
-from clypt.engine.executor import Executor
+from clypt.engine.executors import Executor
 from clypt.engine.portfolio_state import PortfolioState
 from clypt.factors.base import Factor
 from clypt.portfolio.construction import PortfolioConstructor

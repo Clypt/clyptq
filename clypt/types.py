@@ -15,11 +15,6 @@ from enum import Enum
 from typing import Dict, List, Optional
 
 
-# ============================================================================
-# Enums
-# ============================================================================
-
-
 class EngineMode(Enum):
     """Engine execution mode."""
 
@@ -50,11 +45,6 @@ class FillStatus(Enum):
     REJECTED = "rejected"
 
 
-# ============================================================================
-# Market Data Types
-# ============================================================================
-
-
 @dataclass
 class OHLCV:
     """OHLCV candlestick data."""
@@ -78,11 +68,6 @@ class Quote:
     ask: float
     last: float
     volume: float
-
-
-# ============================================================================
-# Trading Primitives
-# ============================================================================
 
 
 @dataclass
@@ -122,11 +107,6 @@ class Position:
     realized_pnl: float = 0.0
 
 
-# ============================================================================
-# Portfolio State
-# ============================================================================
-
-
 @dataclass
 class Snapshot:
     """Portfolio snapshot at a point in time."""
@@ -144,11 +124,6 @@ class Snapshot:
         self.num_positions = len([p for p in self.positions.values() if abs(p.amount) > 1e-8])
         if self.equity > 1e-8:
             self.leverage = self.positions_value / self.equity
-
-
-# ============================================================================
-# Performance Metrics
-# ============================================================================
 
 
 @dataclass
@@ -181,11 +156,6 @@ class PerformanceMetrics:
     start_date: datetime
     end_date: datetime
     duration_days: int
-
-
-# ============================================================================
-# Backtest Results
-# ============================================================================
 
 
 @dataclass
@@ -326,11 +296,6 @@ class EngineConfig:
     rebalance_schedule: str = "daily"  # "daily", "weekly", "monthly"
 
 
-# ============================================================================
-# Strategy Interface Types
-# ============================================================================
-
-
 @dataclass
 class FactorExposure:
     """Factor exposure for a symbol."""
@@ -380,11 +345,6 @@ class DataMetadata:
     num_bars: int
     frequency: str  # "1m", "5m", "1h", "1d", etc.
     source: str = "unknown"
-
-
-# ============================================================================
-# Cache Types
-# ============================================================================
 
 
 @dataclass

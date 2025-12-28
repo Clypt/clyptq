@@ -83,3 +83,4 @@ Thumbs.db
 *.pkl
 backtest_results/
 live_trades/
+TODO.md

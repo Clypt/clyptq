@@ -35,8 +35,7 @@ from clypt.data.loaders.ccxt_loader import load_crypto_data
 from clypt.strategy.base import Strategy
 from clypt.factors.library.momentum import MomentumFactor
 from clypt.portfolio.construction import TopNConstructor
-from clypt.engine.core import Engine
-from clypt.engine.executor import BacktestExecutor
+from clypt.engine import Engine, BacktestExecutor
 from clypt import Constraints, CostModel, EngineMode
 from datetime import datetime, timedelta
 
@@ -83,30 +82,33 @@ print_metrics(result.metrics)
 ```
 clypt/
 ├── types.py              # Core type definitions
-├── config.py             # Configuration management
+├── config.py             # Configuration
 ├── data/
-│   ├── store.py          # Data storage with DataView
-│   ├── validation.py     # Data quality checks
+│   ├── store.py          # Data storage
+│   ├── validation.py     # Data quality
 │   └── loaders/
-│       └── ccxt_loader.py # CCXT data loader
+│       └── ccxt_loader.py # CCXT loader
 ├── factors/
-│   ├── base.py           # Factor base classes
-│   ├── cache.py          # Factor caching
+│   ├── base.py           # Factor base
+│   ├── cache.py          # Caching
 │   └── library/
-│       ├── momentum.py   # Momentum factors
-│       └── volatility.py # Volatility factors
+│       ├── momentum.py   # Momentum
+│       └── volatility.py # Volatility
 ├── portfolio/
-│   ├── construction.py   # Portfolio constructors
-│   └── constraints.py    # Constraint validation
+│   ├── construction.py   # Constructors
+│   └── constraints.py    # Constraints
 ├── engine/
-│   ├── core.py           # Main trading engine
-│   ├── executor.py       # Order execution
+│   ├── core.py           # Main engine
+│   ├── executors/
+│   │   ├── base.py       # Base executor
+│   │   ├── backtest.py   # Backtest
+│   │   └── ccxt.py       # Paper + Live
 │   ├── cost_model.py     # Trading costs
-│   └── portfolio_state.py # Portfolio tracking
+│   └── portfolio_state.py # Portfolio state
 ├── analytics/
-│   └── metrics.py        # Performance metrics
+│   └── metrics.py        # Metrics
 └── strategy/
-    └── base.py           # Strategy interface
+    └── base.py           # Strategy base
 ```
 
 ## Engine Modes
@@ -126,12 +128,22 @@ engine = Engine(..., mode=EngineMode.PAPER)
 **Live**: Real-time execution with real money (use with caution)
 
 ```python
-from clypt.engine.executor import LiveExecutor
+from clypt.engine import CCXTExecutor
 
-executor = LiveExecutor(
+# Paper mode (simulated)
+executor = CCXTExecutor(
     exchange_id="binance",
     api_key="YOUR_API_KEY",
     api_secret="YOUR_API_SECRET",
+    paper_mode=True
+)
+
+# Live mode (real money)
+executor = CCXTExecutor(
+    exchange_id="binance",
+    api_key="YOUR_API_KEY",
+    api_secret="YOUR_API_SECRET",
+    paper_mode=False,
     sandbox=True
 )
 
