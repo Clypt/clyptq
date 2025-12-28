@@ -5,6 +5,8 @@ from typing import Dict, List, Optional
 import pandas as pd
 
 from clypt.analytics.metrics import compute_metrics
+from clypt.data.live_view import LiveDataView
+from clypt.data.rolling_buffer import RollingPriceBuffer
 from clypt.data.store import DataStore
 from clypt.engine.cost_model import CostModel
 from clypt.engine.executors import Executor
@@ -46,6 +48,14 @@ class Engine:
         self.factors: List[Factor] = strategy.factors()
         self.constructor: PortfolioConstructor = strategy.portfolio_constructor()
         self.constraints = strategy.constraints()
+
+        self.price_buffer: Optional[RollingPriceBuffer] = None
+        if mode in [EngineMode.LIVE, EngineMode.PAPER]:
+            max_lookback = max(
+                [getattr(f, 'lookback', 100) for f in self.factors] +
+                [strategy.warmup_periods(), 100]
+            )
+            self.price_buffer = RollingPriceBuffer(max_periods=max_lookback + 50)
 
     def run_backtest(
         self, start: datetime, end: datetime, verbose: bool = False
@@ -287,6 +297,9 @@ class Engine:
                 print("\nStopped.")
 
     def _process_live_timestamp(self, timestamp: datetime, prices: Dict[str, float]) -> None:
+        if self.price_buffer is not None:
+            self.price_buffer.update(timestamp, prices)
+
         snapshot = self.portfolio.get_snapshot(timestamp, prices)
         self.snapshots.append(snapshot)
 
@@ -321,11 +334,23 @@ class Engine:
         if not self._should_rebalance(timestamp):
             return
 
-        # TODO: live factor computation with rolling window
+        warmup = self.strategy.warmup_periods()
+        if self.price_buffer is None or len(self.price_buffer.timestamps) < warmup:
+            return
+
+        data = LiveDataView(self.price_buffer, timestamp)
         all_scores: Dict[str, float] = {}
 
-        for symbol in prices.keys():
-            all_scores[symbol] = 1.0
+        for factor in self.factors:
+            try:
+                scores = factor.compute(data)
+                for symbol, score in scores.items():
+                    if symbol in all_scores:
+                        all_scores[symbol] = (all_scores[symbol] + score) / 2
+                    else:
+                        all_scores[symbol] = score
+            except Exception:
+                continue
 
         if not all_scores:
             return
@@ -355,3 +380,5 @@ class Engine:
         self.snapshots.clear()
         self.trades.clear()
         self._last_rebalance = None
+        if self.price_buffer is not None:
+            self.price_buffer.clear()
