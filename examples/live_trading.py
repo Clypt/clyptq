@@ -55,7 +55,8 @@ def main():
     risk_manager = RiskManager(
         stop_loss_pct=0.05,
         take_profit_pct=0.10,
-        max_drawdown_pct=0.15
+        max_drawdown_pct=0.15,
+        max_position_pct=0.4
     )
 
     engine = Engine(

@@ -192,6 +192,14 @@ class Engine:
         if not orders:
             return
 
+        if self.risk_manager:
+            orders = self.risk_manager.apply_position_limits(
+                orders, self.portfolio.positions, prices, snapshot.equity
+            )
+
+        if not orders:
+            return
+
         fills = self.executor.execute(orders, timestamp, prices)
 
         for fill in fills:
@@ -362,6 +370,14 @@ class Engine:
 
         current_weights = self.portfolio.get_weights(prices)
         orders = self._generate_orders(current_weights, target_weights, snapshot.equity, prices)
+
+        if not orders:
+            return
+
+        if self.risk_manager:
+            orders = self.risk_manager.apply_position_limits(
+                orders, self.portfolio.positions, prices, snapshot.equity
+            )
 
         if not orders:
             return
