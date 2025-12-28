@@ -12,7 +12,7 @@ import pytest
 from clypt import Constraints, CostModel, EngineMode
 from clypt.data.store import DataStore
 from clypt.engine.core import Engine
-from clypt.engine.executor import BacktestExecutor
+from clypt.engine import BacktestExecutor
 from clypt.factors.base import Factor
 from clypt.portfolio.construction import TopNConstructor
 from clypt.strategy.base import SimpleStrategy
