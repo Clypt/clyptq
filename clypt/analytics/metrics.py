@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 
 import numpy as np
@@ -42,8 +43,12 @@ def compute_metrics(snapshots: List[Snapshot], trades: List[Fill]) -> Performanc
             win_rate=0.0,
             profit_factor=0.0,
             avg_trade_pnl=0.0,
-            max_position_concentration=0.0,
+            avg_leverage=0.0,
+            max_leverage=0.0,
             avg_num_positions=0.0,
+            start_date=datetime.now(),
+            end_date=datetime.now(),
+            duration_days=0,
         )
 
     periods_per_year = auto_detect_periods_per_year(snapshots)

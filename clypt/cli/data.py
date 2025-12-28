@@ -86,16 +86,18 @@ class DataCLI:
         days: int = 90,
         limit: int = 60,
         symbols: Optional[List[str]] = None,
+        download_all: bool = False,
     ) -> None:
         """
-        Download historical data for top symbols.
+        Download historical data for symbols.
 
         Args:
             exchange_id: Exchange name
             timeframe: Data timeframe (e.g., '1d', '1h')
             days: Number of days of history
-            limit: Number of symbols to download
-            symbols: Specific symbols to download (overrides limit)
+            limit: Number of top symbols to download
+            symbols: Specific symbols to download (overrides limit and download_all)
+            download_all: Download ALL available USDT pairs (prevents look-ahead bias)
         """
         # Create data directory
         data_path = self.data_dir / exchange_id / timeframe
@@ -111,10 +113,16 @@ class DataCLI:
         print(f"{'='*70}\n")
 
         # Get symbols
-        if symbols is None:
-            symbols = self.get_top_symbols(exchange_id, limit=limit)
-        else:
+        if symbols is not None:
             print(f"Using provided symbols: {symbols}")
+        elif download_all:
+            loader = CCXTLoader(exchange_id)
+            symbols = loader.get_available_symbols(quote="USDT")
+            loader.close()
+            print(f"\nDownloading ALL {len(symbols)} USDT pairs")
+            print("This prevents look-ahead bias in backtesting!")
+        else:
+            symbols = self.get_top_symbols(exchange_id, limit=limit)
 
         # Download data
         loader = CCXTLoader(exchange_id)
@@ -243,10 +251,16 @@ def main():
         "--days", type=int, default=90, help="Days of history (default: 90)"
     )
     download_parser.add_argument(
-        "--limit", type=int, default=60, help="Number of symbols (default: 60)"
+        "--limit", type=int, default=60, help="Number of top symbols (default: 60)"
     )
     download_parser.add_argument(
         "--symbols", nargs="+", help="Specific symbols to download"
+    )
+    download_parser.add_argument(
+        "--all",
+        action="store_true",
+        dest="download_all",
+        help="Download ALL USDT pairs (prevents look-ahead bias)",
     )
 
     # List command
@@ -273,6 +287,7 @@ def main():
             days=args.days,
             limit=args.limit,
             symbols=args.symbols,
+            download_all=args.download_all,
         )
 
     elif args.command == "list":
