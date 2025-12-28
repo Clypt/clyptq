@@ -14,7 +14,7 @@ class DataCLI:
     """Data download CLI."""
 
     def __init__(self):
-        self.project_root = Path(__file__).parent.parent.parent
+        self.project_root = Path(__file__).parent.parent.parent.parent
         self.data_dir = self.project_root / "data"
 
     def get_top_symbols(
@@ -67,9 +67,10 @@ class DataCLI:
         limit: int = 60,
         symbols: Optional[List[str]] = None,
         download_all: bool = False,
+        market_type: str = "spot",
     ) -> None:
         """Download OHLCV data. Use download_all=True to avoid bias."""
-        data_path = self.data_dir / exchange_id / timeframe
+        data_path = self.data_dir / market_type / exchange_id / timeframe
         data_path.mkdir(parents=True, exist_ok=True)
 
         print(f"\n{'='*70}")
@@ -137,9 +138,9 @@ class DataCLI:
         print(f"\nData saved to: {data_path}")
         print(f"Total size: {self._get_dir_size(data_path):.2f} MB")
 
-    def list_data(self, exchange_id: str = "binance", timeframe: str = "1d") -> None:
+    def list_data(self, exchange_id: str = "binance", timeframe: str = "1d", market_type: str = "spot") -> None:
         """List what you downloaded."""
-        data_path = self.data_dir / exchange_id / timeframe
+        data_path = self.data_dir / market_type / exchange_id / timeframe
 
         if not data_path.exists():
             print(f"No data found at {data_path}")
@@ -187,54 +188,11 @@ class DataCLI:
         return total / 1024 / 1024
 
 
-def main():
-    """CLI entry point."""
-    parser = argparse.ArgumentParser(description="Data download CLI")
-
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
-
-    # Download command
-    download_parser = subparsers.add_parser("download", help="Download market data")
-    download_parser.add_argument(
-        "--exchange", default="binance", help="Exchange name (default: binance)"
-    )
-    download_parser.add_argument(
-        "--timeframe", default="1d", help="Timeframe (default: 1d)"
-    )
-    download_parser.add_argument(
-        "--days", type=int, default=90, help="Days of history (default: 90)"
-    )
-    download_parser.add_argument(
-        "--limit", type=int, default=60, help="Number of top symbols (default: 60)"
-    )
-    download_parser.add_argument(
-        "--symbols", nargs="+", help="Specific symbols to download"
-    )
-    download_parser.add_argument(
-        "--all",
-        action="store_true",
-        dest="download_all",
-        help="Download ALL USDT pairs (prevents look-ahead bias)",
-    )
-
-    # List command
-    list_parser = subparsers.add_parser("list", help="List downloaded data")
-    list_parser.add_argument(
-        "--exchange", default="binance", help="Exchange name (default: binance)"
-    )
-    list_parser.add_argument(
-        "--timeframe", default="1d", help="Timeframe (default: 1d)"
-    )
-
-    args = parser.parse_args()
-
-    if not args.command:
-        parser.print_help()
-        return
-
+def handle_data(args):
+    """Handle data command."""
     cli = DataCLI()
 
-    if args.command == "download":
+    if args.action == "download":
         cli.download_data(
             exchange_id=args.exchange,
             timeframe=args.timeframe,
@@ -242,11 +200,11 @@ def main():
             limit=args.limit,
             symbols=args.symbols,
             download_all=args.download_all,
+            market_type=args.market,
         )
-
-    elif args.command == "list":
-        cli.list_data(exchange_id=args.exchange, timeframe=args.timeframe)
-
-
-if __name__ == "__main__":
-    main()
+    elif args.action == "list":
+        cli.list_data(
+            exchange_id=args.exchange,
+            timeframe=args.timeframe,
+            market_type=args.market,
+        )

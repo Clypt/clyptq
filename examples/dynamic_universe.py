@@ -16,9 +16,9 @@ from clypt.portfolio.construction import TopNConstructor
 from clypt.strategy.base import SimpleStrategy
 
 
-def load_full_universe(exchange: str = "binance", timeframe: str = "1d") -> DataStore:
+def load_full_universe(exchange: str = "binance", timeframe: str = "1d", market: str = "spot") -> DataStore:
     """Load all USDT pairs. This prevents look-ahead bias."""
-    data_path = Path(__file__).parent.parent / "data" / exchange / timeframe
+    data_path = Path(__file__).parent.parent / "data" / market / exchange / timeframe
 
     if not data_path.exists():
         raise FileNotFoundError(

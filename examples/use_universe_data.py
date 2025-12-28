@@ -16,12 +16,12 @@ from clypt.portfolio.construction import TopNConstructor
 from clypt.strategy.base import SimpleStrategy
 
 
-def load_universe_from_disk(universe_size: int = 10, exchange: str = "binance"):
-    """Load pre-downloaded data. Run 'python -m clypt.cli.data download' first."""
-    data_path = Path(__file__).parent.parent / "data" / exchange / "1d"
+def load_universe_from_disk(universe_size: int = 10, exchange: str = "binance", market: str = "spot"):
+    """Load pre-downloaded data. Run 'clypt-engine data download' first."""
+    data_path = Path(__file__).parent.parent / "data" / market / exchange / "1d"
 
     if not data_path.exists():
-        raise FileNotFoundError(f"No data at {data_path}. Run: python -m clypt.cli.data download")
+        raise FileNotFoundError(f"No data at {data_path}. Run: clypt-engine data download")
 
     files = sorted(data_path.glob("*.parquet"))
 
