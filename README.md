@@ -1,0 +1,175 @@
+# Clypt Trading Engine
+
+Production-ready alpha-factor based cryptocurrency trading engine with realistic backtesting and live execution capabilities.
+
+## Overview
+
+Quantitative trading system for cryptocurrency markets featuring alpha factor computation, portfolio optimization, and event-driven backtesting with proper look-ahead bias prevention.
+
+## Features
+
+- Alpha factor framework with extensible factor library
+- Multiple portfolio construction strategies (Top-N, Score-Weighted, Risk Parity)
+- Event-driven backtesting engine with look-ahead bias prevention
+- Live trading via CCXT integration
+- Comprehensive performance analytics with auto-detecting time frequencies
+- Cash constraint enforcement and overselling prevention
+- Proper rebalancing timing control
+
+## Installation
+
+```bash
+git clone https://github.com/yourusername/clypt-trading-engine.git
+cd clypt-trading-engine
+
+python -m venv venv
+source venv/bin/activate
+
+pip install -e .
+```
+
+## Quick Start
+
+```python
+from clypt.data.loaders.ccxt_loader import load_crypto_data
+from clypt.strategy.base import Strategy
+from clypt.factors.library.momentum import MomentumFactor
+from clypt.portfolio.construction import TopNConstructor
+from clypt.engine.core import Engine
+from clypt.engine.executor import BacktestExecutor
+from clypt import Constraints, CostModel, EngineMode
+from datetime import datetime, timedelta
+
+# Load data
+symbols = ["BTC/USDT", "ETH/USDT", "BNB/USDT"]
+store = load_crypto_data(symbols, days=180)
+
+# Define strategy
+class MyStrategy(Strategy):
+    def factors(self):
+        return [MomentumFactor(lookback=20)]
+
+    def portfolio_constructor(self):
+        return TopNConstructor(top_n=5)
+
+    def constraints(self):
+        return Constraints(
+            max_position_size=0.3,
+            max_gross_exposure=1.0
+        )
+
+# Run backtest
+cost_model = CostModel(maker_fee=0.001, taker_fee=0.001)
+executor = BacktestExecutor(cost_model)
+
+engine = Engine(
+    strategy=MyStrategy(),
+    data_store=store,
+    mode=EngineMode.BACKTEST,
+    executor=executor,
+    initial_capital=10000.0
+)
+
+end = datetime.now()
+start = end - timedelta(days=90)
+result = engine.run_backtest(start, end, verbose=True)
+
+from clypt.analytics.metrics import print_metrics
+print_metrics(result.metrics)
+```
+
+## Architecture
+
+```
+clypt/
+├── types.py              # Core type definitions
+├── config.py             # Configuration management
+├── data/
+│   ├── store.py          # Data storage with DataView
+│   ├── validation.py     # Data quality checks
+│   └── loaders/
+│       └── ccxt_loader.py # CCXT data loader
+├── factors/
+│   ├── base.py           # Factor base classes
+│   ├── cache.py          # Factor caching
+│   └── library/
+│       ├── momentum.py   # Momentum factors
+│       └── volatility.py # Volatility factors
+├── portfolio/
+│   ├── construction.py   # Portfolio constructors
+│   └── constraints.py    # Constraint validation
+├── engine/
+│   ├── core.py           # Main trading engine
+│   ├── executor.py       # Order execution
+│   ├── cost_model.py     # Trading costs
+│   └── portfolio_state.py # Portfolio tracking
+├── analytics/
+│   └── metrics.py        # Performance metrics
+└── strategy/
+    └── base.py           # Strategy interface
+```
+
+## Engine Modes
+
+**Backtest**: Deterministic execution with historical data, no real money
+
+```python
+engine = Engine(..., mode=EngineMode.BACKTEST)
+```
+
+**Paper**: Real-time execution with real market data, no real money
+
+```python
+engine = Engine(..., mode=EngineMode.PAPER)
+```
+
+**Live**: Real-time execution with real money (use with caution)
+
+```python
+from clypt.engine.executor import LiveExecutor
+
+executor = LiveExecutor(
+    exchange_id="binance",
+    api_key="YOUR_API_KEY",
+    api_secret="YOUR_API_SECRET",
+    sandbox=True
+)
+
+engine = Engine(..., mode=EngineMode.LIVE, executor=executor)
+```
+
+## Testing
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run with coverage
+pytest tests/ --cov=clypt --cov-report=term-missing
+
+# Run critical tests only
+pytest tests/integration/test_parity.py -v
+```
+
+### Critical Tests
+
+1. Look-ahead bias prevention in `available_symbols()`
+2. Cash constraint enforcement
+3. Overselling prevention
+4. Rebalancing frequency control
+5. Backtest-Paper parity verification
+
+## Performance Metrics
+
+- Returns: Total, Annualized
+- Risk: Volatility, Sharpe, Sortino, Max Drawdown
+- Trading: Win Rate, Profit Factor, Average P&L
+- Exposure: Leverage, Number of Positions
+
+## License
+
+MIT License
+
+## Disclaimer
+
+This software is for educational and research purposes only. Cryptocurrency trading involves substantial risk. Not financial advice. Test thoroughly before live trading.
