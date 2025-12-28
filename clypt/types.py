@@ -198,6 +198,97 @@ class BacktestResult:
     strategy_name: str  # Name of the strategy
     mode: EngineMode  # Engine mode used
 
+    def to_dict(self) -> Dict:
+        """Export backtest results as dictionary for SaaS platform integration."""
+        import json
+
+        equity_curve = []
+        for snapshot in self.snapshots:
+            equity_curve.append({
+                "timestamp": snapshot.timestamp.isoformat(),
+                "equity": snapshot.equity,
+                "cash": snapshot.cash,
+                "positions_value": snapshot.positions_value,
+                "leverage": snapshot.leverage,
+                "num_positions": snapshot.num_positions,
+            })
+
+        trades_list = []
+        for trade in self.trades:
+            trades_list.append({
+                "symbol": trade.symbol,
+                "side": trade.side.value,
+                "amount": trade.amount,
+                "price": trade.price,
+                "fee": trade.fee,
+                "timestamp": trade.timestamp.isoformat(),
+                "order_id": trade.order_id,
+                "status": trade.status.value,
+            })
+
+        positions_timeline = []
+        for snapshot in self.snapshots:
+            positions_at_time = []
+            for symbol, position in snapshot.positions.items():
+                positions_at_time.append({
+                    "symbol": symbol,
+                    "amount": position.amount,
+                    "avg_price": position.avg_price,
+                    "unrealized_pnl": position.unrealized_pnl,
+                    "realized_pnl": position.realized_pnl,
+                })
+            positions_timeline.append({
+                "timestamp": snapshot.timestamp.isoformat(),
+                "positions": positions_at_time,
+            })
+
+        drawdown_series = []
+        peak = self.snapshots[0].equity if self.snapshots else 0.0
+        for snapshot in self.snapshots:
+            if snapshot.equity > peak:
+                peak = snapshot.equity
+            drawdown = (peak - snapshot.equity) / peak if peak > 0 else 0.0
+            drawdown_series.append({
+                "timestamp": snapshot.timestamp.isoformat(),
+                "equity": snapshot.equity,
+                "peak": peak,
+                "drawdown": drawdown,
+            })
+
+        metrics_dict = {
+            "total_return": self.metrics.total_return,
+            "annualized_return": self.metrics.annualized_return,
+            "volatility": self.metrics.volatility,
+            "sharpe_ratio": self.metrics.sharpe_ratio,
+            "sortino_ratio": self.metrics.sortino_ratio,
+            "max_drawdown": self.metrics.max_drawdown,
+            "num_trades": self.metrics.num_trades,
+            "win_rate": self.metrics.win_rate,
+            "profit_factor": self.metrics.profit_factor,
+            "avg_trade_pnl": self.metrics.avg_trade_pnl,
+            "avg_leverage": self.metrics.avg_leverage,
+            "max_leverage": self.metrics.max_leverage,
+            "avg_num_positions": self.metrics.avg_num_positions,
+            "start_date": self.metrics.start_date.isoformat(),
+            "end_date": self.metrics.end_date.isoformat(),
+            "duration_days": self.metrics.duration_days,
+        }
+
+        return {
+            "strategy_name": self.strategy_name,
+            "mode": self.mode.value,
+            "equity_curve": equity_curve,
+            "trades": trades_list,
+            "positions_timeline": positions_timeline,
+            "drawdown_series": drawdown_series,
+            "metrics": metrics_dict,
+        }
+
+    def to_json(self, indent: Optional[int] = 2) -> str:
+        """Export backtest results as JSON string."""
+        import json
+        return json.dumps(self.to_dict(), indent=indent)
+
 
 # ============================================================================
 # Configuration Types
