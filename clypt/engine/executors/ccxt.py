@@ -11,6 +11,7 @@ import ccxt
 
 from clypt.engine.cost_model import apply_slippage, calculate_fee
 from clypt.engine.executors.base import Executor
+from clypt.engine.order_tracker import OrderTracker, TrackedOrder
 from clypt.types import CostModel, Fill, FillStatus, Order, OrderSide
 
 
@@ -29,6 +30,7 @@ class CCXTExecutor(Executor):
     ):
         self.paper_mode = paper_mode
         self.cost_model = cost_model or CostModel()
+        self.order_tracker = OrderTracker()
 
         exchange_class = getattr(ccxt, exchange_id)
         self.exchange = exchange_class(
@@ -125,13 +127,16 @@ class CCXTExecutor(Executor):
         return fills
 
     def _execute_live(self, orders: List[Order], timestamp: datetime) -> List[Fill]:
-        """Live mode: real orders."""
+        """Live mode: real orders with tracking."""
         fills = []
 
         for order in orders:
+            tracked = self.order_tracker.create_order(order)
+
             try:
                 rounded_amt = self._round_lot_size(order.symbol, abs(order.amount))
                 if rounded_amt < 1e-8:
+                    tracked.mark_rejected("Amount too small after lot size rounding")
                     continue
 
                 side = "buy" if order.side == OrderSide.BUY else "sell"
@@ -139,11 +144,14 @@ class CCXTExecutor(Executor):
                     symbol=order.symbol, side=side, amount=rounded_amt
                 )
 
+                tracked.mark_submitted(ccxt_order["id"])
+
                 filled_order = self._wait_for_fill(
                     ccxt_order["id"], order.symbol, timeout_sec=self.timeout // 1000
                 )
 
                 if filled_order is None:
+                    tracked.mark_cancelled()
                     try:
                         self.exchange.cancel_order(ccxt_order["id"], order.symbol)
                     except:
@@ -155,23 +163,24 @@ class CCXTExecutor(Executor):
                     avg_price = filled_order.get("average", 0.0)
                     fee_cost = filled_order.get("fee", {}).get("cost", 0.0)
 
-                    fills.append(
-                        Fill(
-                            symbol=order.symbol,
-                            side=order.side,
-                            amount=filled_amt,
-                            price=avg_price,
-                            fee=fee_cost,
-                            timestamp=timestamp,
-                            order_id=ccxt_order["id"],
-                            status=FillStatus.FILLED
-                            if filled_amt >= rounded_amt * 0.99
-                            else FillStatus.PARTIAL,
-                        )
+                    fill = Fill(
+                        symbol=order.symbol,
+                        side=order.side,
+                        amount=filled_amt,
+                        price=avg_price,
+                        fee=fee_cost,
+                        timestamp=timestamp,
+                        order_id=ccxt_order["id"],
+                        status=FillStatus.FILLED
+                        if filled_amt >= rounded_amt * 0.99
+                        else FillStatus.PARTIAL,
                     )
 
+                    tracked.add_fill(fill)
+                    fills.append(fill)
+
             except ccxt.InsufficientFunds as e:
-                print(f"Insufficient funds {order.symbol}: {e}")
+                tracked.mark_rejected(f"Insufficient funds: {e}")
                 fills.append(
                     Fill(
                         symbol=order.symbol,
@@ -185,7 +194,7 @@ class CCXTExecutor(Executor):
                 )
 
             except Exception as e:
-                print(f"Order failed {order.symbol}: {e}")
+                tracked.mark_rejected(f"Order failed: {e}")
                 fills.append(
                     Fill(
                         symbol=order.symbol,
@@ -204,6 +213,45 @@ class CCXTExecutor(Executor):
         """Get available balance."""
         balance = self.exchange.fetch_balance()
         return balance.get(currency, {}).get("free", 0.0)
+
+    def fetch_positions(self) -> Dict[str, Dict]:
+        """Get current exchange positions.
+        Returns: {symbol: {amount: float, avg_price: float}}
+        """
+        if self.paper_mode:
+            return {}
+
+        try:
+            balance = self.exchange.fetch_balance()
+            positions = {}
+
+            for symbol, info in balance.get("total", {}).items():
+                if symbol == "USDT" or info == 0:
+                    continue
+
+                amount = info
+                if amount < 1e-8:
+                    continue
+
+                base_symbol = f"{symbol}/USDT"
+                if base_symbol in self.exchange.markets:
+                    positions[base_symbol] = {
+                        "amount": amount,
+                        "avg_price": 0.0,
+                    }
+
+            return positions
+        except Exception as e:
+            print(f"Failed to fetch positions: {e}")
+            return {}
+
+    def get_pending_orders(self, symbol: Optional[str] = None) -> List[TrackedOrder]:
+        """Get non-terminal orders."""
+        return self.order_tracker.get_pending_orders(symbol)
+
+    def cleanup_old_orders(self, max_age_seconds: int = 86400) -> None:
+        """Remove old terminal orders to save memory."""
+        self.order_tracker.cleanup_old_orders(max_age_seconds)
 
     def close(self):
         """Close connection."""

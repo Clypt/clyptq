@@ -11,6 +11,7 @@ from clypt.data.store import DataStore
 from clypt.engine.cost_model import CostModel
 from clypt.engine.executors import Executor
 from clypt.engine.portfolio_state import PortfolioState
+from clypt.engine.position_sync import PositionSynchronizer
 from clypt.engine.risk_manager import RiskManager
 from clypt.factors.base import Factor
 from clypt.portfolio.construction import PortfolioConstructor
@@ -50,12 +51,14 @@ class Engine:
         self.constraints = strategy.constraints()
 
         self.price_buffer: Optional[RollingPriceBuffer] = None
+        self.position_sync: Optional[PositionSynchronizer] = None
         if mode in [EngineMode.LIVE, EngineMode.PAPER]:
             max_lookback = max(
                 [getattr(f, 'lookback', 100) for f in self.factors] +
                 [strategy.warmup_periods(), 100]
             )
             self.price_buffer = RollingPriceBuffer(max_periods=max_lookback + 50)
+            self.position_sync = PositionSynchronizer(tolerance=1e-6)
 
     def run_backtest(
         self, start: datetime, end: datetime, verbose: bool = False
@@ -275,6 +278,9 @@ class Engine:
             print(f"Universe: {universe}")
             print(f"Interval: {interval_seconds}s")
 
+        iteration = 0
+        position_sync_interval = max(10, 600 // interval_seconds)
+
         try:
             while True:
                 timestamp = datetime.utcnow()
@@ -290,6 +296,13 @@ class Engine:
 
                     self._process_live_timestamp(timestamp, prices)
 
+                    if iteration % position_sync_interval == 0:
+                        self._check_position_sync(verbose)
+
+                    if hasattr(self.executor, 'cleanup_old_orders'):
+                        if iteration % 100 == 0:
+                            self.executor.cleanup_old_orders()
+
                     if verbose:
                         equity = self.snapshots[-1].equity if self.snapshots else 0
                         print(f"{timestamp.strftime('%H:%M:%S')} | ${equity:.2f}")
@@ -298,6 +311,7 @@ class Engine:
                     if verbose:
                         print(f"Error: {e}")
 
+                iteration += 1
                 time.sleep(interval_seconds)
 
         except KeyboardInterrupt:
@@ -390,6 +404,33 @@ class Engine:
                 self.trades.append(fill)
             except ValueError as e:
                 print(f"Fill rejected: {e}")
+
+    def _check_position_sync(self, verbose: bool = False) -> None:
+        """Check for position discrepancies with exchange."""
+        if self.position_sync is None:
+            return
+
+        if not hasattr(self.executor, 'fetch_positions'):
+            return
+
+        try:
+            exchange_positions = self.executor.fetch_positions()
+            discrepancies = self.position_sync.check_discrepancies(
+                self.portfolio.positions, exchange_positions
+            )
+
+            critical = [d for d in discrepancies if d.is_critical]
+            if critical and verbose:
+                print(f"WARNING: {len(critical)} position discrepancies detected")
+                for disc in critical:
+                    print(
+                        f"  {disc.symbol}: internal={disc.internal_amount:.4f} "
+                        f"exchange={disc.exchange_amount:.4f} diff={disc.amount_diff:.4f}"
+                    )
+
+        except Exception as e:
+            if verbose:
+                print(f"Position sync check failed: {e}")
 
     def reset(self) -> None:
         self.portfolio.reset()
