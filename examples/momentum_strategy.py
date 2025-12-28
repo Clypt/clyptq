@@ -5,7 +5,7 @@ from typing import List
 
 from clypt import Constraints, CostModel, EngineMode
 from clypt.analytics.metrics import print_metrics
-from clypt.data.loaders.ccxt_loader import load_crypto_data
+from clypt.data.loaders.ccxt import load_crypto_data
 from clypt.engine import BacktestExecutor, Engine
 from clypt.factors.base import Factor, combine_factors
 from clypt.factors.library.momentum import MomentumFactor, RSIFactor

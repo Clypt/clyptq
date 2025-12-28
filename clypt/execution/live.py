@@ -9,9 +9,9 @@ from typing import Dict, List, Optional
 
 import ccxt
 
-from clypt.engine.cost_model import apply_slippage, calculate_fee
-from clypt.engine.executors.base import Executor
-from clypt.engine.order_tracker import OrderTracker, TrackedOrder
+from clypt.risk.costs import apply_slippage, calculate_fee
+from clypt.execution.base import Executor
+from clypt.execution.orders.tracker import OrderTracker, TrackedOrder
 from clypt.types import CostModel, Fill, FillStatus, Order, OrderSide
 
 

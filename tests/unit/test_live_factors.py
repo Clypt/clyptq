@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from clypt.data.live_view import LiveDataView
-from clypt.data.rolling_buffer import RollingPriceBuffer
+from clypt.data.live.view import LiveDataView
+from clypt.data.live.buffer import RollingPriceBuffer
 from clypt.factors.library.momentum import MomentumFactor
 
 

@@ -1,3 +1,5 @@
 """Portfolio construction and optimization."""
 
-__all__ = []
+from clypt.portfolio.state import PortfolioState
+
+__all__ = ["PortfolioState"]

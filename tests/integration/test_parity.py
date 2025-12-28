@@ -15,8 +15,8 @@ import pytest
 
 from clypt import Constraints, CostModel, EngineMode
 from clypt.data.store import DataStore
-from clypt.engine.core import Engine
-from clypt.engine.executor import BacktestExecutor, PaperExecutor
+from clypt.engine.backtest import Engine
+from clypt.execution import BacktestExecutor
 from clypt.factors.base import Factor
 from clypt.factors.library.momentum import MomentumFactor
 from clypt.portfolio.construction import TopNConstructor

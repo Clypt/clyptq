@@ -1,15 +1,17 @@
-"""Trading engine core components."""
+"""Backtesting engine."""
 
-from clypt.engine.core import Engine
-from clypt.engine.cost_model import CostModel
-from clypt.engine.executors import BacktestExecutor, CCXTExecutor, Executor
-from clypt.engine.portfolio_state import PortfolioState
-from clypt.engine.risk_manager import RiskManager
+from clypt.engine.backtest import Engine
+
+# Re-export for backward compatibility
+from clypt.execution import BacktestExecutor
+from clypt.execution.live import CCXTExecutor as LiveExecutor
+from clypt.portfolio.state import PortfolioState
+from clypt.risk import CostModel, RiskManager
 
 __all__ = [
     "Engine",
-    "Executor",
     "BacktestExecutor",
+    "LiveExecutor",
     "CCXTExecutor",
     "CostModel",
     "PortfolioState",

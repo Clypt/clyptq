@@ -1,6 +1,6 @@
 """Test risk manager functionality."""
 
-from clypt.engine.risk_manager import RiskManager
+from clypt.risk.manager import RiskManager
 from clypt.types import Order, OrderSide, Position
 
 

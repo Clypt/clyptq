@@ -9,7 +9,7 @@ from datetime import datetime
 
 import pytest
 
-from clypt.engine.portfolio_state import PortfolioState
+from clypt.portfolio.state import PortfolioState
 from clypt.types import Fill, OrderSide, FillStatus
 
 

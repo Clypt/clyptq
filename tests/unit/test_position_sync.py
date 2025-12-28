@@ -1,6 +1,6 @@
 """Tests for position synchronization."""
 
-from clypt.engine.position_sync import PositionDiscrepancy, PositionSynchronizer
+from clypt.execution.positions.synchronizer import PositionDiscrepancy, PositionSynchronizer
 from clypt.types import Position
 
 
