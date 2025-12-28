@@ -28,10 +28,31 @@ source venv/bin/activate
 pip install -e .
 ```
 
+## Universe Data Management
+
+Download and manage market data for large universes (up to 50 symbols):
+
+```bash
+# Download top 60 symbols by 24h volume (90 days of data)
+python -m clypt.cli.data download --exchange binance --days 90 --limit 60
+
+# List downloaded data
+python -m clypt.cli.data list
+
+# Download specific symbols
+python -m clypt.cli.data download --symbols BTC/USDT ETH/USDT SOL/USDT
+```
+
+Benefits:
+- No API rate limits during backtesting
+- Instant startup (no download time)
+- Offline development possible
+- Consistent data across runs
+
 ## Quick Start
 
 ```python
-from clypt.data.loaders.ccxt_loader import load_crypto_data
+from clypt.data.loaders.ccxt import load_crypto_data
 from clypt.strategy.base import Strategy
 from clypt.factors.library.momentum import MomentumFactor
 from clypt.portfolio.construction import TopNConstructor
@@ -83,11 +104,18 @@ print_metrics(result.metrics)
 clypt/
 ├── types.py              # Core type definitions
 ├── config.py             # Configuration
+├── cli/                  # Command-line tools
+│   ├── __init__.py
+│   ├── __main__.py
+│   └── data.py           # Universe data management
 ├── data/
 │   ├── store.py          # Data storage
 │   ├── validation.py     # Data quality
+│   ├── live/             # Live trading data
+│   │   ├── buffer.py     # Rolling price buffer
+│   │   └── view.py       # Live data view
 │   └── loaders/
-│       └── ccxt_loader.py # CCXT loader
+│       └── ccxt.py       # CCXT loader
 ├── factors/
 │   ├── base.py           # Factor base
 │   ├── cache.py          # Caching
@@ -96,17 +124,23 @@ clypt/
 │       └── volatility.py # Volatility
 ├── portfolio/
 │   ├── construction.py   # Constructors
-│   └── constraints.py    # Constraints
+│   ├── constraints.py    # Constraints
+│   └── state.py          # Portfolio state
+├── execution/            # Order execution layer
+│   ├── base.py           # Base executor
+│   ├── backtest.py       # Backtest executor
+│   ├── live.py           # Live/Paper executor
+│   ├── orders/
+│   │   └── tracker.py    # Order state tracking
+│   └── positions/
+│       └── synchronizer.py # Position sync
+├── risk/                 # Risk management
+│   ├── costs.py          # Trading costs
+│   └── manager.py        # Risk manager
 ├── engine/
-│   ├── core.py           # Main engine
-│   ├── executors/
-│   │   ├── base.py       # Base executor
-│   │   ├── backtest.py   # Backtest
-│   │   └── ccxt.py       # Paper + Live
-│   ├── cost_model.py     # Trading costs
-│   └── portfolio_state.py # Portfolio state
+│   └── core.py           # Main orchestrator
 ├── analytics/
-│   └── metrics.py        # Metrics
+│   └── metrics.py        # Performance metrics
 └── strategy/
     └── base.py           # Strategy base
 ```
@@ -128,10 +162,10 @@ engine = Engine(..., mode=EngineMode.PAPER)
 **Live**: Real-time execution with real money (use with caution)
 
 ```python
-from clypt.engine import CCXTExecutor
+from clypt.engine import LiveExecutor
 
 # Paper mode (simulated)
-executor = CCXTExecutor(
+executor = LiveExecutor(
     exchange_id="binance",
     api_key="YOUR_API_KEY",
     api_secret="YOUR_API_SECRET",
@@ -139,7 +173,7 @@ executor = CCXTExecutor(
 )
 
 # Live mode (real money)
-executor = CCXTExecutor(
+executor = LiveExecutor(
     exchange_id="binance",
     api_key="YOUR_API_KEY",
     api_secret="YOUR_API_SECRET",
