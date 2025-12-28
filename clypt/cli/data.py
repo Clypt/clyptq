@@ -1,10 +1,4 @@
-"""
-CLI tool for downloading and managing market data.
-
-Usage:
-    python -m clypt.cli.data download --exchange binance --days 90 --limit 60
-    python -m clypt.cli.data list --exchange binance
-"""
+"""Download market data. Use --all to avoid look-ahead bias."""
 
 import argparse
 from datetime import datetime, timedelta
@@ -17,7 +11,7 @@ from clypt.data.loaders.ccxt import CCXTLoader
 
 
 class DataCLI:
-    """CLI for managing market data downloads."""
+    """Data download CLI."""
 
     def __init__(self):
         self.project_root = Path(__file__).parent.parent.parent
@@ -26,26 +20,15 @@ class DataCLI:
     def get_top_symbols(
         self, exchange_id: str = "binance", quote: str = "USDT", limit: int = 60
     ) -> List[str]:
-        """
-        Get top N symbols by 24h volume.
-
-        Args:
-            exchange_id: Exchange name
-            quote: Quote currency
-            limit: Number of symbols to return
-
-        Returns:
-            List of top symbols by volume
-        """
+        """Get top N by volume."""
         print(f"\nFetching top {limit} {quote} pairs from {exchange_id}...")
 
         loader = CCXTLoader(exchange_id)
 
-        # Get all USDT pairs
         all_symbols = loader.get_available_symbols(quote=quote)
         print(f"Found {len(all_symbols)} {quote} pairs")
 
-        # Fetch tickers in batches to avoid 413 error
+        # Batch it or Binance yells 413 at you
         batch_size = 100
         all_tickers = {}
 
@@ -60,15 +43,12 @@ class DataCLI:
                 print(f"  Warning: Failed to fetch batch {i}-{i+batch_size}: {e}")
                 continue
 
-        # Sort by quote volume (24h volume in quote currency)
         symbol_volumes = []
         for symbol, ticker in all_tickers.items():
             if ticker.get("quoteVolume"):
                 symbol_volumes.append((symbol, ticker["quoteVolume"]))
 
         symbol_volumes.sort(key=lambda x: x[1], reverse=True)
-
-        # Get top N
         top_symbols = [s[0] for s in symbol_volumes[:limit]]
 
         loader.close()
@@ -88,18 +68,7 @@ class DataCLI:
         symbols: Optional[List[str]] = None,
         download_all: bool = False,
     ) -> None:
-        """
-        Download historical data for symbols.
-
-        Args:
-            exchange_id: Exchange name
-            timeframe: Data timeframe (e.g., '1d', '1h')
-            days: Number of days of history
-            limit: Number of top symbols to download
-            symbols: Specific symbols to download (overrides limit and download_all)
-            download_all: Download ALL available USDT pairs (prevents look-ahead bias)
-        """
-        # Create data directory
+        """Download OHLCV data. Use download_all=True to avoid bias."""
         data_path = self.data_dir / exchange_id / timeframe
         data_path.mkdir(parents=True, exist_ok=True)
 
@@ -112,7 +81,6 @@ class DataCLI:
         print(f"Save path:   {data_path}")
         print(f"{'='*70}\n")
 
-        # Get symbols
         if symbols is not None:
             print(f"Using provided symbols: {symbols}")
         elif download_all:
@@ -124,7 +92,6 @@ class DataCLI:
         else:
             symbols = self.get_top_symbols(exchange_id, limit=limit)
 
-        # Download data
         loader = CCXTLoader(exchange_id)
         since = datetime.now() - timedelta(days=days)
 
@@ -137,10 +104,7 @@ class DataCLI:
 
         for i, symbol in enumerate(symbols, 1):
             try:
-                # Download OHLCV
                 df = loader.load_ohlcv(symbol, timeframe=timeframe, since=since)
-
-                # Save to parquet
                 filename = symbol.replace("/", "_") + ".parquet"
                 filepath = data_path / filename
 
@@ -162,7 +126,6 @@ class DataCLI:
 
         loader.close()
 
-        # Summary
         print("-" * 70)
         print(f"\nDownload Summary:")
         print(f"  Success: {success_count}/{len(symbols)}")
@@ -175,13 +138,7 @@ class DataCLI:
         print(f"Total size: {self._get_dir_size(data_path):.2f} MB")
 
     def list_data(self, exchange_id: str = "binance", timeframe: str = "1d") -> None:
-        """
-        List downloaded data files.
-
-        Args:
-            exchange_id: Exchange name
-            timeframe: Data timeframe
-        """
+        """List what you downloaded."""
         data_path = self.data_dir / exchange_id / timeframe
 
         if not data_path.exists():
@@ -202,7 +159,6 @@ class DataCLI:
             size = filepath.stat().st_size
             total_size += size
 
-            # Load to check date range
             try:
                 df = pd.read_parquet(filepath)
                 start = df.index[0].strftime("%Y-%m-%d")
@@ -223,7 +179,7 @@ class DataCLI:
         print(f"Total: {len(files)} files, {total_size/1024/1024:.2f} MB")
 
     def _get_dir_size(self, path: Path) -> float:
-        """Get directory size in MB."""
+        """Directory size in MB."""
         total = 0
         for filepath in path.rglob("*"):
             if filepath.is_file():
@@ -232,10 +188,8 @@ class DataCLI:
 
 
 def main():
-    """Main CLI entry point."""
-    parser = argparse.ArgumentParser(
-        description="Clypt Trading Engine - Data Management CLI"
-    )
+    """CLI entry point."""
+    parser = argparse.ArgumentParser(description="Data download CLI")
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 

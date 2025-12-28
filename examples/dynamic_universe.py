@@ -1,28 +1,4 @@
-"""
-Example: Dynamic Universe Selection (NO Look-Ahead Bias)
-
-This example demonstrates the CORRECT way to handle universe selection
-in backtesting by selecting symbols based on ONLY past data at each
-rebalancing point.
-
-WRONG (Look-Ahead Bias):
-- Select top 50 symbols by current (2025-12-28) volume
-- Use those 50 symbols for entire backtest period
-
-RIGHT (This Example):
-- At each rebalancing date, select top 50 by PAST volume
-- Universe changes over time as market conditions change
-- Never uses future information
-
-Pre-requisites:
-    # Download ALL USDT pairs to prevent look-ahead bias
-    python -m clypt.cli.data download --all --days 90
-
-Rebalancing Frequency Guide:
-    - Daily: High turnover, high costs, quick response
-    - Weekly: Balanced (RECOMMENDED for crypto)
-    - Monthly: Low turnover, low costs, slow response
-"""
+"""Dynamic universe with NO look-ahead bias. Use --all flag when downloading."""
 
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -41,18 +17,7 @@ from clypt.strategy.base import SimpleStrategy
 
 
 def load_full_universe(exchange: str = "binance", timeframe: str = "1d") -> DataStore:
-    """
-    Load ALL available USDT pairs from disk.
-
-    This is the ONLY way to prevent look-ahead bias in universe selection.
-
-    Args:
-        exchange: Exchange name
-        timeframe: Data timeframe
-
-    Returns:
-        DataStore with all symbols loaded
-    """
+    """Load all USDT pairs. This prevents look-ahead bias."""
     data_path = Path(__file__).parent.parent / "data" / exchange / timeframe
 
     if not data_path.exists():
@@ -96,12 +61,7 @@ def load_full_universe(exchange: str = "binance", timeframe: str = "1d") -> Data
 
 
 class DynamicUniverseStrategy(SimpleStrategy):
-    """
-    Strategy with dynamic universe selection.
-
-    At each rebalancing, selects top N symbols by recent volume
-    using ONLY past data (no look-ahead bias).
-    """
+    """Dynamic universe - top N by past volume only."""
 
     def __init__(
         self,
@@ -109,28 +69,16 @@ class DynamicUniverseStrategy(SimpleStrategy):
         top_n_positions: int = 10,
         volume_lookback_days: int = 7,
     ):
-        """
-        Initialize strategy with dynamic universe.
-
-        Args:
-            universe_size: Size of universe to select from (e.g., 50)
-            top_n_positions: Number of positions to hold (e.g., 10)
-            volume_lookback_days: Days to average volume over for selection
-        """
+        """Init with dynamic selection."""
         self.universe_size = universe_size
         self.volume_lookback_days = volume_lookback_days
 
-        # Multiple factors for better signal
-        factors = [
-            MomentumFactor(lookback=20),
-            VolatilityFactor(lookback=20),
-        ]
+        factors = [MomentumFactor(lookback=20), VolatilityFactor(lookback=20)]
 
-        # Position limits
         constraints = Constraints(
-            max_position_size=0.25,  # Max 25% per position
+            max_position_size=0.25,
             max_gross_exposure=1.0,
-            min_position_size=0.05,  # Min 5% per position
+            min_position_size=0.05,
             max_num_positions=top_n_positions,
             allow_short=False,
         )
@@ -139,44 +87,32 @@ class DynamicUniverseStrategy(SimpleStrategy):
             factors_list=factors,
             constructor=TopNConstructor(top_n=top_n_positions),
             constraints_obj=constraints,
-            schedule_str="weekly",  # Weekly rebalancing (recommended)
+            schedule_str="weekly",
             warmup=25,
             name=f"Dynamic{universe_size}",
         )
 
 
 def main():
-    """
-    Backtest with dynamic universe selection.
-
-    Universe changes at each rebalancing based on past volume data.
-    """
-    # Configuration
-    UNIVERSE_SIZE = 50  # Select top 50 by volume at each rebalance
-    TOP_N_POSITIONS = 10  # Hold top 10 positions
-    VOLUME_LOOKBACK = 7  # Use 7-day average volume for selection
+    """Backtest with dynamic universe."""
+    UNIVERSE_SIZE = 50
+    TOP_N_POSITIONS = 10
+    VOLUME_LOOKBACK = 7
     BACKTEST_DAYS = 60
 
     print("=" * 70)
     print("DYNAMIC UNIVERSE BACKTESTING (NO LOOK-AHEAD BIAS)")
     print("=" * 70)
 
-    # Load ALL available USDT pairs
     store = load_full_universe()
 
-    # Strategy
     strategy = DynamicUniverseStrategy(
         universe_size=UNIVERSE_SIZE,
         top_n_positions=TOP_N_POSITIONS,
         volume_lookback_days=VOLUME_LOOKBACK,
     )
 
-    # Setup engine
-    cost_model = CostModel(
-        maker_fee=0.001,  # 0.1%
-        taker_fee=0.001,
-        slippage_bps=5.0,  # 5 bps
-    )
+    cost_model = CostModel(maker_fee=0.001, taker_fee=0.001, slippage_bps=5.0)
 
     executor = BacktestExecutor(cost_model)
 
@@ -188,7 +124,6 @@ def main():
         initial_capital=10000.0,
     )
 
-    # Backtest period
     date_range = store.get_date_range()
     end_date = date_range.end
     start_date = end_date - timedelta(days=BACKTEST_DAYS)
@@ -226,14 +161,11 @@ def main():
     print("\nNotice: Universe changes over time based on PAST volume data")
     print("This prevents look-ahead bias!\n")
 
-    # Run backtest
     print("Running backtest...")
     result = engine.run_backtest(start=start_date, end=end_date, verbose=True)
 
-    # Print metrics
     print_metrics(result.metrics)
 
-    # Analysis
     print("\n" + "=" * 70)
     print("WHY THIS PREVENTS LOOK-AHEAD BIAS:")
     print("=" * 70)
