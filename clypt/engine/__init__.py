@@ -4,6 +4,7 @@ from clypt.engine.core import Engine
 from clypt.engine.cost_model import CostModel
 from clypt.engine.executors import BacktestExecutor, CCXTExecutor, Executor
 from clypt.engine.portfolio_state import PortfolioState
+from clypt.engine.risk_manager import RiskManager
 
 __all__ = [
     "Engine",
@@ -12,4 +13,5 @@ __all__ = [
     "CCXTExecutor",
     "CostModel",
     "PortfolioState",
+    "RiskManager",
 ]

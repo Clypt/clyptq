@@ -9,6 +9,7 @@ from clypt.data.store import DataStore
 from clypt.engine.cost_model import CostModel
 from clypt.engine.executors import Executor
 from clypt.engine.portfolio_state import PortfolioState
+from clypt.engine.risk_manager import RiskManager
 from clypt.factors.base import Factor
 from clypt.portfolio.construction import PortfolioConstructor
 from clypt.strategy.base import Strategy
@@ -32,12 +33,14 @@ class Engine:
         mode: EngineMode,
         executor: Executor,
         initial_capital: float = 10000.0,
+        risk_manager: Optional[RiskManager] = None,
     ):
         self.strategy = strategy
         self.data_store = data_store
         self.mode = mode
         self.executor = executor
         self.portfolio = PortfolioState(initial_capital)
+        self.risk_manager = risk_manager
         self.snapshots: List[Snapshot] = []
         self.trades: List[Fill] = []
         self._last_rebalance: Optional[datetime] = None
@@ -292,6 +295,37 @@ class Engine:
         """Process a single timestamp in live mode (no DataStore needed)."""
         snapshot = self.portfolio.get_snapshot(timestamp, prices)
         self.snapshots.append(snapshot)
+
+        # Check risk management first
+        if self.risk_manager:
+            # Max drawdown kill switch
+            if self.risk_manager.check_max_drawdown(snapshot.equity):
+                print(f"🚨 MAX DRAWDOWN HIT! Liquidating all positions")
+                liquidate_orders = [
+                    Order(symbol=symbol, side=OrderSide.SELL, amount=pos.amount)
+                    for symbol, pos in self.portfolio.positions.items()
+                ]
+                fills = self.executor.execute(liquidate_orders, timestamp, prices)
+                for fill in fills:
+                    try:
+                        self.portfolio.apply_fill(fill)
+                        self.trades.append(fill)
+                    except ValueError as e:
+                        print(f"Fill rejected: {e}")
+                return
+
+            # Stop-loss / Take-profit checks
+            exit_orders = self.risk_manager.check_position_exits(
+                self.portfolio.positions, prices
+            )
+            if exit_orders:
+                fills = self.executor.execute(exit_orders, timestamp, prices)
+                for fill in fills:
+                    try:
+                        self.portfolio.apply_fill(fill)
+                        self.trades.append(fill)
+                    except ValueError as e:
+                        print(f"Fill rejected: {e}")
 
         if not self._should_rebalance(timestamp):
             return

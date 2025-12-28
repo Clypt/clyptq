@@ -7,7 +7,7 @@ from typing import List
 
 from clypt import Constraints, CostModel, EngineMode
 from clypt.data.store import DataStore
-from clypt.engine import CCXTExecutor, Engine
+from clypt.engine import CCXTExecutor, Engine, RiskManager
 from clypt.factors.base import Factor
 from clypt.factors.library.momentum import MomentumFactor
 from clypt.portfolio.construction import TopNConstructor
@@ -57,12 +57,20 @@ def main():
     strategy = LiveStrategy()
     data_store = DataStore()  # empty store for live mode
 
+    # Risk management (optional)
+    risk_manager = RiskManager(
+        stop_loss_pct=0.05,      # 5% stop loss
+        take_profit_pct=0.10,     # 10% take profit
+        max_drawdown_pct=0.15     # 15% max drawdown kill switch
+    )
+
     engine = Engine(
         strategy=strategy,
         data_store=data_store,
         mode=EngineMode.PAPER,
         executor=executor,
         initial_capital=10000.0,
+        risk_manager=risk_manager,
     )
 
     print("\n🚀 Starting paper trading...")
