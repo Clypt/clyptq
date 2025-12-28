@@ -1,6 +1,6 @@
 """Backtesting engine."""
 
-from clypt.engine.backtest import Engine
+from clypt.engine.core import Engine
 
 # Re-export for backward compatibility
 from clypt.execution import BacktestExecutor
