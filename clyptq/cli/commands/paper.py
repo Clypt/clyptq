@@ -18,13 +18,9 @@ def handle_paper(args):
     print("PAPER TRADING MODE")
     print(f"{'='*70}\n")
 
-    # get API credentials
-    api_key = os.getenv("BINANCE_API_KEY")
-    api_secret = os.getenv("BINANCE_API_SECRET")
-
-    if not api_key or not api_secret:
-        print("Error: Set BINANCE_API_KEY and BINANCE_API_SECRET")
-        return
+    # API credentials optional for paper mode (uses public API)
+    api_key = os.getenv("BINANCE_API_KEY", "")
+    api_secret = os.getenv("BINANCE_API_SECRET", "")
 
     # load strategy
     print(f"Loading strategy: {args.strategy}")
