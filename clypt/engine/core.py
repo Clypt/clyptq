@@ -165,6 +165,8 @@ class Engine:
         snapshot = self.portfolio.get_snapshot(timestamp, prices)
         self.snapshots.append(snapshot)
 
+        self._check_and_liquidate_delisted(timestamp, available, prices)
+
         if not self._should_rebalance(timestamp):
             return
 
@@ -261,6 +263,36 @@ class Engine:
         orders = sells + buys
         return orders
 
+    def _check_and_liquidate_delisted(
+        self, timestamp: datetime, available: List[str], prices: Dict[str, float]
+    ) -> None:
+        """Force sell positions that got delisted."""
+        if not self.portfolio.positions:
+            return
+
+        delisted = [
+            symbol for symbol in self.portfolio.positions.keys()
+            if symbol not in available
+        ]
+
+        if not delisted:
+            return
+
+        orders = [
+            Order(symbol=symbol, side=OrderSide.SELL, amount=pos.amount)
+            for symbol, pos in self.portfolio.positions.items()
+            if symbol in delisted
+        ]
+
+        fills = self.executor.execute(orders, timestamp, prices)
+
+        for fill in fills:
+            try:
+                self.portfolio.apply_fill(fill)
+                self.trades.append(fill)
+            except ValueError as e:
+                print(f"Delisted liquidation failed: {e}")
+
     def run_live(self, interval_seconds: int = 60, verbose: bool = True) -> None:
         """Real-time loop. Don't fuck this up."""
         if self.mode not in [EngineMode.LIVE, EngineMode.PAPER]:
@@ -324,6 +356,14 @@ class Engine:
 
         snapshot = self.portfolio.get_snapshot(timestamp, prices)
         self.snapshots.append(snapshot)
+
+        universe = self.strategy.universe()
+        if universe:
+            available = [s for s in universe if s in prices]
+        else:
+            available = list(prices.keys())
+
+        self._check_and_liquidate_delisted(timestamp, available, prices)
 
         if self.risk_manager:
             if self.risk_manager.check_max_drawdown(snapshot.equity):
