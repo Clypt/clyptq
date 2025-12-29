@@ -103,6 +103,63 @@ class Engine:
             mode=self.mode,
         )
 
+    def run_monte_carlo(
+        self,
+        num_simulations: int = 1000,
+        random_seed: Optional[int] = None,
+        verbose: bool = False,
+    ):
+        """
+        Run Monte Carlo simulation on current backtest results.
+
+        Must be called after run_backtest(). Uses bootstrap sampling of daily
+        returns to generate distribution of possible outcomes.
+
+        Args:
+            num_simulations: Number of simulations to run
+            random_seed: Random seed for reproducibility
+            verbose: Print progress
+
+        Returns:
+            MonteCarloResult with distribution statistics
+
+        Raises:
+            ValueError: If no backtest results available
+        """
+        from clyptq.analytics.monte_carlo import MonteCarloSimulator
+
+        if not self.snapshots:
+            raise ValueError("No backtest results available. Run run_backtest() first.")
+
+        # Create backtest result for simulation
+        from clyptq.analytics.metrics import compute_metrics
+
+        metrics = compute_metrics(self.snapshots, self.trades)
+        backtest_result = BacktestResult(
+            snapshots=self.snapshots,
+            trades=self.trades,
+            metrics=metrics,
+            strategy_name=self.strategy.name,
+            mode=self.mode,
+        )
+
+        if verbose:
+            print(f"Running {num_simulations} Monte Carlo simulations...")
+
+        simulator = MonteCarloSimulator(
+            num_simulations=num_simulations,
+            random_seed=random_seed,
+        )
+
+        result = simulator.run(backtest_result, initial_capital=self.portfolio.initial_cash)
+
+        if verbose:
+            from clyptq.analytics.monte_carlo import print_monte_carlo_results
+
+            print_monte_carlo_results(result)
+
+        return result
+
     def _get_timestamps(self, start: datetime, end: datetime) -> List[datetime]:
         schedule = self.strategy.schedule()
 
@@ -226,7 +283,7 @@ class Engine:
         prices: Dict[str, float],
     ) -> List[Order]:
         orders = []
-        all_symbols = set(current_weights.keys()) | set(target_weights.keys())
+        all_symbols = sorted(set(current_weights.keys()) | set(target_weights.keys()))
         sells = []
         buys = []
 

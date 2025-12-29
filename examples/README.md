@@ -41,6 +41,22 @@ python examples/03_dynamic_universe.py
 - Rebalancing on universe changes
 - Look-ahead bias prevention
 
+## Risk Analysis
+
+### 05_monte_carlo.py
+Monte Carlo simulation for backtest validation.
+
+```bash
+python examples/05_monte_carlo.py
+```
+
+**Features**:
+- Bootstrap sampling of returns
+- Confidence intervals (5%, 50%, 95%)
+- Risk metrics (CVaR, max drawdown distribution)
+- Probability of loss calculation
+- Sharpe ratio confidence bands
+
 ## Live Trading
 
 ### 04_streaming_live.py

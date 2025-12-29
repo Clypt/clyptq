@@ -20,7 +20,7 @@ class DataView:
     @property
     def symbols(self) -> List[str]:
         """Available symbols."""
-        return list(self._data.keys())
+        return sorted(self._data.keys())
 
     @property
     def timestamp(self) -> datetime:
@@ -196,7 +196,7 @@ class DataStore:
             at: Timestamp to check
 
         Returns:
-            List of available symbols
+            List of available symbols (sorted for determinism)
         """
         available = []
         for symbol, df in self._data.items():
@@ -204,7 +204,7 @@ class DataStore:
             # Data availability naturally reflects delisting without look-ahead
             if df.index.min() <= at <= df.index.max():
                 available.append(symbol)
-        return available
+        return sorted(available)
 
     def get_top_symbols_by_volume(
         self, at: datetime, top_n: int, lookback_days: int = 7
@@ -291,8 +291,8 @@ class DataStore:
         return self._metadata[symbol]
 
     def symbols(self) -> List[str]:
-        """Get list of all stored symbols."""
-        return list(self._data.keys())
+        """Get list of all stored symbols (sorted for determinism)."""
+        return sorted(self._data.keys())
 
     def has_symbol(self, symbol: str) -> bool:
         """Check if symbol exists in store."""
