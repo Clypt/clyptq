@@ -25,7 +25,7 @@ pip install clyptq
 Or from source:
 
 ```bash
-git clone https://github.com/yourusername/clyptq.git
+git clone https://github.com/Clypt/clyptq.git
 cd clyptq
 
 python -m venv venv
