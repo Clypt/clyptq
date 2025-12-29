@@ -9,8 +9,8 @@ from datetime import datetime
 
 import pytest
 
-from clypt.portfolio.state import PortfolioState
-from clypt.types import Fill, OrderSide, FillStatus
+from clyptq.portfolio.state import PortfolioState
+from clyptq.types import Fill, OrderSide, FillStatus
 
 
 def test_insufficient_cash_rejected():

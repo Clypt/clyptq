@@ -5,13 +5,13 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from clypt import Constraints, CostModel, EngineMode
-from clypt.data.store import DataStore
-from clypt.engine.core import Engine
-from clypt.execution import BacktestExecutor
-from clypt.factors.library.momentum import MomentumFactor
-from clypt.portfolio.construction import TopNConstructor
-from clypt.strategy.base import SimpleStrategy
+from clyptq import Constraints, CostModel, EngineMode
+from clyptq.data.store import DataStore
+from clyptq.engine.core import Engine
+from clyptq.execution import BacktestExecutor
+from clyptq.factors.library.momentum import MomentumFactor
+from clyptq.portfolio.construction import TopNConstructor
+from clyptq.strategy.base import SimpleStrategy
 
 
 def create_test_datastore():

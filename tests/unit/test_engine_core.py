@@ -9,13 +9,13 @@ from datetime import datetime, timedelta
 import pandas as pd
 import pytest
 
-from clypt import Constraints, CostModel, EngineMode
-from clypt.data.store import DataStore
-from clypt.engine.core import Engine
-from clypt.execution import BacktestExecutor
-from clypt.factors.base import Factor
-from clypt.portfolio.construction import TopNConstructor
-from clypt.strategy.base import SimpleStrategy
+from clyptq import Constraints, CostModel, EngineMode
+from clyptq.data.store import DataStore
+from clyptq.engine.core import Engine
+from clyptq.execution import BacktestExecutor
+from clyptq.factors.base import Factor
+from clyptq.portfolio.construction import TopNConstructor
+from clyptq.strategy.base import SimpleStrategy
 from typing import Dict
 
 
@@ -301,7 +301,7 @@ def test_backtest_with_multiple_timestamps_per_day():
 
 def test_order_generation_sells_first():
     """Test that sell orders are generated before buy orders."""
-    from clypt.types import Order, OrderSide
+    from clyptq.types import Order, OrderSide
 
     store = create_test_datastore()
 

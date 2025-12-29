@@ -9,7 +9,7 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
-from clypt.data.store import DataStore
+from clyptq.data.store import DataStore
 
 
 def test_available_symbols_no_lookahead():

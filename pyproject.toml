@@ -3,13 +3,13 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "clypt-trading-engine"
+name = "clyptq"
 version = "0.2.0"
-description = "Alpha-factor based cryptocurrency trading engine"
+description = "Quantitative cryptocurrency trading engine"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
-    {name = "Clypt Team", email = "team@clypt.com"}
+    {name = "Jaden - Clypt", email = "jaden@clypt.ai"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.scripts]
-clypt-engine = "clypt.cli.main:main"
+clyptq = "clyptq.cli.main:main"
 
 [project.optional-dependencies]
 dev = [
@@ -42,7 +42,11 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["clypt*"]
+include = ["clyptq*"]
+exclude = ["tests*", "examples*"]
+
+[tool.setuptools.exclude-package-data]
+"*" = ["TODO.md", "CLAUDE.md", ".git*", "*.pyc", "__pycache__"]
 
 [tool.black]
 line-length = 100
@@ -65,10 +69,10 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --cov=clypt --cov-report=term-missing"
+addopts = "-v --cov=clyptq --cov-report=term-missing"
 
 [tool.coverage.run]
-source = ["clypt"]
+source = ["clyptq"]
 omit = ["tests/*", "**/__pycache__/*"]
 
 [tool.coverage.report]

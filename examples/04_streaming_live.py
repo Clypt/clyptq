@@ -7,16 +7,16 @@ Demonstrates async streaming for minimal latency.
 import asyncio
 import os
 
-from clypt.data.streaming.ccxt_stream import CCXTStreamingSource
-from clypt.engine.core import Engine
-from clypt.execution.live import LiveExecutor
-from clypt.factors.library.momentum import MomentumFactor
-from clypt.portfolio.construction import TopNConstructor
-from clypt.portfolio.constraints import Constraints
-from clypt.risk.costs import CostModel
-from clypt.risk.manager import RiskManager
-from clypt.strategy.base import SimpleStrategy
-from clypt.types import EngineMode
+from clyptq.data.streaming.ccxt_stream import CCXTStreamingSource
+from clyptq.engine.core import Engine
+from clyptq.execution.live import LiveExecutor
+from clyptq.factors.library.momentum import MomentumFactor
+from clyptq.portfolio.construction import TopNConstructor
+from clyptq.portfolio.constraints import Constraints
+from clyptq.risk.costs import CostModel
+from clyptq.risk.manager import RiskManager
+from clyptq.strategy.base import SimpleStrategy
+from clyptq.types import EngineMode
 
 
 async def main():

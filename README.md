@@ -1,6 +1,6 @@
-# Clypt Trading Engine
+# ClyptQ
 
-Production-ready alpha-factor based cryptocurrency trading engine with realistic backtesting and live execution capabilities.
+Production-ready quantitative cryptocurrency trading engine with realistic backtesting and live execution capabilities.
 
 ## Overview
 
@@ -19,8 +19,14 @@ Quantitative trading system for cryptocurrency markets featuring alpha factor co
 ## Installation
 
 ```bash
-git clone https://github.com/yourusername/clypt-trading-engine.git
-cd clypt-trading-engine
+pip install clyptq
+```
+
+Or from source:
+
+```bash
+git clone https://github.com/yourusername/clyptq.git
+cd clyptq
 
 python -m venv venv
 source venv/bin/activate
@@ -28,36 +34,34 @@ source venv/bin/activate
 pip install -e .
 ```
 
-## Universe Data Management
-
-Download and manage market data for large universes (up to 50 symbols):
+## CLI Usage
 
 ```bash
 # Download top 60 symbols by 24h volume (90 days of data)
-python -m clypt.cli.data download --exchange binance --days 90 --limit 60
+clyptq data download --exchange binance --days 90 --limit 60
 
 # List downloaded data
-python -m clypt.cli.data list
+clyptq data list
 
 # Download specific symbols
-python -m clypt.cli.data download --symbols BTC/USDT ETH/USDT SOL/USDT
-```
+clyptq data download --symbols BTC/USDT ETH/USDT SOL/USDT
 
-Benefits:
-- No API rate limits during backtesting
-- Instant startup (no download time)
-- Offline development possible
-- Consistent data across runs
+# Run backtest
+clyptq backtest --strategy MyStrategy --start 2024-01-01 --end 2024-03-01
+
+# Run live trading
+clyptq live --strategy MyStrategy --mode paper
+```
 
 ## Quick Start
 
 ```python
-from clypt.data.loaders.ccxt import load_crypto_data
-from clypt.strategy.base import Strategy
-from clypt.factors.library.momentum import MomentumFactor
-from clypt.portfolio.construction import TopNConstructor
-from clypt.engine import Engine, BacktestExecutor
-from clypt import Constraints, CostModel, EngineMode
+from clyptq.data.loaders.ccxt import load_crypto_data
+from clyptq.strategy.base import Strategy
+from clyptq.factors.library.momentum import MomentumFactor
+from clyptq.portfolio.construction import TopNConstructor
+from clyptq.engine import Engine, BacktestExecutor
+from clyptq import Constraints, CostModel, EngineMode
 from datetime import datetime, timedelta
 
 # Load data
@@ -94,26 +98,24 @@ end = datetime.now()
 start = end - timedelta(days=90)
 result = engine.run_backtest(start, end, verbose=True)
 
-from clypt.analytics.metrics import print_metrics
+from clyptq.analytics.metrics import print_metrics
 print_metrics(result.metrics)
 ```
 
 ## Architecture
 
 ```
-clypt/
+clyptq/
 ├── types.py              # Core type definitions
 ├── config.py             # Configuration
 ├── cli/                  # Command-line tools
-│   ├── __init__.py
-│   ├── __main__.py
-│   └── data.py           # Universe data management
+│   ├── main.py           # CLI entry point
+│   └── commands/         # CLI commands
 ├── data/
 │   ├── store.py          # Data storage
 │   ├── validation.py     # Data quality
+│   ├── streaming/        # Real-time data
 │   ├── live/             # Live trading data
-│   │   ├── buffer.py     # Rolling price buffer
-│   │   └── view.py       # Live data view
 │   └── loaders/
 │       └── ccxt.py       # CCXT loader
 ├── factors/
@@ -126,14 +128,12 @@ clypt/
 │   ├── construction.py   # Constructors
 │   ├── constraints.py    # Constraints
 │   └── state.py          # Portfolio state
-├── execution/            # Order execution layer
+├── execution/            # Order execution
 │   ├── base.py           # Base executor
 │   ├── backtest.py       # Backtest executor
 │   ├── live.py           # Live/Paper executor
-│   ├── orders/
-│   │   └── tracker.py    # Order state tracking
-│   └── positions/
-│       └── synchronizer.py # Position sync
+│   ├── orders/           # Order management
+│   └── positions/        # Position management
 ├── risk/                 # Risk management
 │   ├── costs.py          # Trading costs
 │   └── manager.py        # Risk manager
@@ -162,7 +162,7 @@ engine = Engine(..., mode=EngineMode.PAPER)
 **Live**: Real-time execution with real money (use with caution)
 
 ```python
-from clypt.engine import LiveExecutor
+from clyptq.execution.live import LiveExecutor
 
 # Paper mode (simulated)
 executor = LiveExecutor(
@@ -191,7 +191,7 @@ engine = Engine(..., mode=EngineMode.LIVE, executor=executor)
 pytest tests/ -v
 
 # Run with coverage
-pytest tests/ --cov=clypt --cov-report=term-missing
+pytest tests/ --cov=clyptq --cov-report=term-missing
 
 # Run critical tests only
 pytest tests/integration/test_parity.py -v

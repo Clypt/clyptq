@@ -13,14 +13,14 @@ Usage:
 
 from datetime import datetime, timedelta
 
-from clypt import Constraints, CostModel, EngineMode
-from clypt.analytics.metrics import print_metrics
-from clypt.data.loaders.ccxt import load_crypto_data
-from clypt.engine import BacktestExecutor, Engine
-from clypt.factors.library.momentum import MomentumFactor
-from clypt.factors.library.volatility import VolatilityFactor
-from clypt.portfolio.construction import TopNConstructor
-from clypt.strategy.base import SimpleStrategy
+from clyptq import Constraints, CostModel, EngineMode
+from clyptq.analytics.metrics import print_metrics
+from clyptq.data.loaders.ccxt import load_crypto_data
+from clyptq.engine import BacktestExecutor, Engine
+from clyptq.factors.library.momentum import MomentumFactor
+from clyptq.factors.library.volatility import VolatilityFactor
+from clyptq.portfolio.construction import TopNConstructor
+from clyptq.strategy.base import SimpleStrategy
 
 
 class MomentumStrategy(SimpleStrategy):

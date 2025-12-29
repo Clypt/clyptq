@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta
 import json
 
-from clypt.types import (
+from clyptq.types import (
     BacktestResult,
     EngineMode,
     Fill,

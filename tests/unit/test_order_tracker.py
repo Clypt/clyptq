@@ -2,8 +2,8 @@
 
 from datetime import datetime, timedelta
 
-from clypt.execution.orders.tracker import OrderStatus, OrderTracker, TrackedOrder
-from clypt.types import Fill, FillStatus, Order, OrderSide
+from clyptq.execution.orders.tracker import OrderStatus, OrderTracker, TrackedOrder
+from clyptq.types import Fill, FillStatus, Order, OrderSide
 
 
 def test_tracked_order_creation():

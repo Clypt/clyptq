@@ -1,0 +1,24 @@
+# Include essential docs
+include README.md
+include LICENSE
+include pyproject.toml
+
+# Exclude development files
+exclude TODO.md
+exclude CLAUDE.md
+exclude .gitignore
+exclude .coverage
+exclude pytest.ini
+
+# Exclude directories
+recursive-exclude tests *
+recursive-exclude examples *
+recursive-exclude .git *
+recursive-exclude __pycache__ *
+recursive-exclude *.egg-info *
+
+# Exclude build artifacts
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude .DS_Store

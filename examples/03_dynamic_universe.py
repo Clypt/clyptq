@@ -26,15 +26,15 @@ from pathlib import Path
 
 import pandas as pd
 
-from clypt import Constraints, CostModel, EngineMode
-from clypt.analytics.metrics import print_metrics
-from clypt.data.store import DataStore
-from clypt.engine import Engine
-from clypt.execution import BacktestExecutor
-from clypt.factors.library.momentum import MomentumFactor
-from clypt.factors.library.volatility import VolatilityFactor
-from clypt.portfolio.construction import TopNConstructor
-from clypt.strategy.base import SimpleStrategy
+from clyptq import Constraints, CostModel, EngineMode
+from clyptq.analytics.metrics import print_metrics
+from clyptq.data.store import DataStore
+from clyptq.engine import Engine
+from clyptq.execution import BacktestExecutor
+from clyptq.factors.library.momentum import MomentumFactor
+from clyptq.factors.library.volatility import VolatilityFactor
+from clyptq.portfolio.construction import TopNConstructor
+from clyptq.strategy.base import SimpleStrategy
 
 
 def load_all_pairs(exchange: str = "binance", market: str = "spot") -> DataStore:

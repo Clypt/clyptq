@@ -5,14 +5,14 @@ from datetime import datetime, timedelta
 import pandas as pd
 import pytest
 
-from clypt.data.store import DataStore
-from clypt.engine.core import Engine
-from clypt.execution.backtest import BacktestExecutor
-from clypt.factors.library.momentum import MomentumFactor
-from clypt.portfolio.construction import TopNConstructor
-from clypt.portfolio.constraints import Constraints
-from clypt.strategy.base import SimpleStrategy
-from clypt.types import CostModel, EngineMode
+from clyptq.data.store import DataStore
+from clyptq.engine.core import Engine
+from clyptq.execution.backtest import BacktestExecutor
+from clyptq.factors.library.momentum import MomentumFactor
+from clyptq.portfolio.construction import TopNConstructor
+from clyptq.portfolio.constraints import Constraints
+from clyptq.strategy.base import SimpleStrategy
+from clyptq.types import CostModel, EngineMode
 
 
 def test_delisting_forces_liquidation():

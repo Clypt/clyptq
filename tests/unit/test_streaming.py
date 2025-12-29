@@ -5,7 +5,7 @@ from datetime import datetime
 
 import pytest
 
-from clypt.data.streaming.ccxt_stream import CCXTStreamingSource
+from clyptq.data.streaming.ccxt_stream import CCXTStreamingSource
 
 
 @pytest.mark.asyncio
