@@ -89,9 +89,8 @@ def handle_live(args):
                 print(f"  Positions: {list(positions.keys())}")
 
             # portfolio state
-            equity = engine.portfolio.equity
-            cash = engine.portfolio.cash
-            print(f"  Equity: ${equity:,.2f} | Cash: ${cash:,.2f}")
+            snapshot = engine.portfolio.get_snapshot(now, prices)
+            print(f"  Equity: ${snapshot.equity:,.2f} | Cash: ${snapshot.cash:,.2f}")
 
             # wait
             time.sleep(60)

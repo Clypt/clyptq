@@ -68,9 +68,8 @@ def handle_paper(args):
                 print(f"  {sym}: ${price:,.2f}")
 
             # portfolio state
-            equity = engine.portfolio.equity
-            cash = engine.portfolio.cash
-            print(f"  Equity: ${equity:,.2f} | Cash: ${cash:,.2f}")
+            snapshot = engine.portfolio.get_snapshot(now, prices)
+            print(f"  Equity: ${snapshot.equity:,.2f} | Cash: ${snapshot.cash:,.2f}")
 
             # wait before next check
             time.sleep(60)
