@@ -283,7 +283,7 @@ class Engine:
         prices: Dict[str, float],
     ) -> List[Order]:
         orders = []
-        all_symbols = set(current_weights.keys()) | set(target_weights.keys())
+        all_symbols = sorted(set(current_weights.keys()) | set(target_weights.keys()))
         sells = []
         buys = []
 

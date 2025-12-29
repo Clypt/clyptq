@@ -69,8 +69,8 @@ class TopNConstructor(PortfolioConstructor):
         if not scores:
             return {}
 
-        # Sort by score descending
-        sorted_symbols = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        # Sort by score descending, then by symbol name for determinism
+        sorted_symbols = sorted(scores.items(), key=lambda x: (-x[1], x[0]))
 
         # Select top N (or fewer if not enough symbols)
         n = min(self.top_n, len(sorted_symbols), constraints.max_num_positions)
@@ -130,7 +130,7 @@ class ScoreWeightedConstructor(PortfolioConstructor):
         # Filter and normalize scores
         if self.use_long_short and constraints.allow_short:
             # Keep all scores, normalize by sum of absolute values
-            symbols = list(scores.keys())
+            symbols = sorted(scores.keys())
             score_values = np.array([scores[s] for s in symbols])
 
             # Handle case where all scores are zero
@@ -147,7 +147,7 @@ class ScoreWeightedConstructor(PortfolioConstructor):
             if not positive_scores:
                 return {}
 
-            symbols = list(positive_scores.keys())
+            symbols = sorted(positive_scores.keys())
             score_values = np.array([positive_scores[s] for s in symbols])
 
             # Normalize
@@ -172,9 +172,9 @@ class ScoreWeightedConstructor(PortfolioConstructor):
 
         # Limit number of positions
         if len(weights) > constraints.max_num_positions:
-            # Keep largest absolute weights
+            # Keep largest absolute weights, then by symbol name for determinism
             sorted_weights = sorted(
-                weights.items(), key=lambda x: abs(x[1]), reverse=True
+                weights.items(), key=lambda x: (-abs(x[1]), x[0])
             )
             weights = dict(sorted_weights[: constraints.max_num_positions])
 
@@ -254,7 +254,7 @@ class RiskParityConstructor(PortfolioConstructor):
             return {}
 
         # Check volatility cache
-        symbols = list(positive_scores.keys())
+        symbols = sorted(positive_scores.keys())
         missing = [s for s in symbols if s not in self._volatility_cache]
         if missing:
             raise ValueError(
@@ -276,9 +276,9 @@ class RiskParityConstructor(PortfolioConstructor):
             if weight >= constraints.min_position_size:
                 weights[symbol] = weight
 
-        # Limit number of positions (keep largest weights)
+        # Limit number of positions (keep largest weights), then by symbol name for determinism
         if len(weights) > constraints.max_num_positions:
-            sorted_weights = sorted(weights.items(), key=lambda x: x[1], reverse=True)
+            sorted_weights = sorted(weights.items(), key=lambda x: (-x[1], x[0]))
             weights = dict(sorted_weights[: constraints.max_num_positions])
 
         # Normalize to respect max_gross_exposure

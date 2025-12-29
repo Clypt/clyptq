@@ -5,14 +5,21 @@ Generate comprehensive backtest reports with metrics, attribution,
 and visualizations.
 """
 
+import base64
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 from typing import Optional
+
+import matplotlib
+import matplotlib.pyplot as plt
 
 from clyptq.analytics.attribution import PerformanceAttributor
 from clyptq.analytics.drawdown import DrawdownAnalyzer
 from clyptq.analytics.rolling import RollingMetricsCalculator
 from clyptq.core.types import BacktestResult
+
+matplotlib.use("Agg")
 
 
 class HTMLReportGenerator:
@@ -66,9 +73,33 @@ class HTMLReportGenerator:
             calculator = RollingMetricsCalculator(window=self.rolling_window)
             rolling = calculator.calculate(result)
 
-        html = self._build_html(title, result, attribution, drawdown, rolling)
+        equity_chart = self._create_equity_chart(result)
+        html = self._build_html(title, result, attribution, drawdown, rolling, equity_chart)
 
         Path(output_path).write_text(html, encoding="utf-8")
+
+    def _create_equity_chart(self, result: BacktestResult) -> str:
+        """Create equity curve chart as base64 string."""
+        timestamps = [s.timestamp for s in result.snapshots]
+        equity = [s.equity for s in result.snapshots]
+
+        fig, ax = plt.subplots(figsize=(12, 6))
+        ax.plot(timestamps, equity, linewidth=2, color="#2563eb")
+        ax.set_xlabel("Date")
+        ax.set_ylabel("Equity (USDT)")
+        ax.set_title("Equity Curve", fontsize=14, fontweight="bold")
+        ax.grid(True, alpha=0.3)
+        ax.ticklabel_format(style="plain", axis="y")
+
+        plt.tight_layout()
+
+        buf = BytesIO()
+        plt.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+        plt.close(fig)
+        buf.seek(0)
+
+        img_base64 = base64.b64encode(buf.read()).decode("utf-8")
+        return f"data:image/png;base64,{img_base64}"
 
     def _build_html(
         self,
@@ -77,6 +108,7 @@ class HTMLReportGenerator:
         attribution,
         drawdown,
         rolling,
+        equity_chart: str,
     ) -> str:
         """Build HTML content."""
         return f"""<!DOCTYPE html>
@@ -94,6 +126,7 @@ class HTMLReportGenerator:
         <p class="timestamp">Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
 
         {self._build_summary(result)}
+        {self._build_equity_section(equity_chart)}
         {self._build_metrics(result)}
         {self._build_attribution(attribution)}
         {self._build_drawdown(drawdown)}
@@ -185,6 +218,15 @@ class HTMLReportGenerator:
             <tr><th>Duration</th><td>{m.duration_days} days</td></tr>
             <tr><th>Trades</th><td>{m.num_trades}</td></tr>
         </table>
+        """
+
+    def _build_equity_section(self, equity_chart: str) -> str:
+        """Build equity curve section."""
+        return f"""
+        <h2>Equity Curve</h2>
+        <div style="text-align: center; margin: 20px 0;">
+            <img src="{equity_chart}" style="max-width: 100%; height: auto;">
+        </div>
         """
 
     def _build_metrics(self, result: BacktestResult) -> str:
