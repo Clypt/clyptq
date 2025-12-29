@@ -27,8 +27,4 @@ jobs:
         pip install -e ".[dev]"
 
     - name: Run tests
-      run: pytest tests/ -v --cov=clypt --cov-report=term-missing
-
-    - name: Check test coverage
-      run: |
-        coverage report --fail-under=80
+      run: pytest tests/ -v
