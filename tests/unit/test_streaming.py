@@ -18,14 +18,16 @@ async def test_streaming_source_lifecycle():
     def on_tick(timestamp, prices):
         ticks.append((timestamp, prices))
 
-    # Start
+    # Start in background task
     task = asyncio.create_task(stream.start(["BTC/USDT"], on_tick))
-    await asyncio.sleep(0.3)
-    assert stream.is_running()
 
-    # Stop
-    await stream.stop()
-    assert not stream.is_running()
+    try:
+        await asyncio.sleep(0.3)
+        assert stream.is_running()
+    finally:
+        # Always cleanup
+        await stream.stop()
+        assert not stream.is_running()
 
 
 @pytest.mark.asyncio
@@ -39,9 +41,12 @@ async def test_streaming_receives_prices():
         ticks.append(prices)
 
     task = asyncio.create_task(stream.start(["BTC/USDT"], on_tick))
-    await asyncio.sleep(1.0)  # Wait a bit longer
 
-    await stream.stop()
+    try:
+        await asyncio.sleep(1.0)  # Wait a bit longer
+    finally:
+        # Always cleanup
+        await stream.stop()
 
     # Should have received at least a few ticks
     assert len(ticks) >= 2, f"Expected >=2 ticks, got {len(ticks)}"
@@ -61,9 +66,12 @@ async def test_concurrent_symbol_fetching():
         ticks.append(prices)
 
     task = asyncio.create_task(stream.start(symbols, on_tick))
-    await asyncio.sleep(1.0)
 
-    await stream.stop()
+    try:
+        await asyncio.sleep(1.0)
+    finally:
+        # Always cleanup
+        await stream.stop()
 
     # Should get prices for multiple symbols
     assert len(ticks) >= 2

@@ -16,51 +16,41 @@ def test_available_symbols_no_lookahead():
     """
     CRITICAL TEST 1: Look-ahead bias prevention.
 
-    data/store.py:207-217 - MUST NOT use future delisting info.
-
-    Tests that available_symbols() only returns symbols that:
-    1. Were already listed by the query timestamp
-    2. Have at least one data point at or before the query timestamp
-
-    Does NOT consider when symbols will be delisted (future information).
+    Tests that available_symbols() only returns symbols with actual data at timestamp.
+    This prevents using symbols that haven't been listed yet (future information).
     """
     store = DataStore()
 
-    # BTC starts on Jan 1, 2023
+    # BTC: Jan 1 - June 30
+    btc_dates = pd.date_range(datetime(2023, 1, 1), datetime(2023, 6, 30), freq="D")
     btc_data = pd.DataFrame({
-        "open": [100.0, 101.0, 102.0],
-        "high": [101.0, 102.0, 103.0],
-        "low": [99.0, 100.0, 101.0],
-        "close": [100.5, 101.5, 102.5],
-        "volume": [1000.0, 1100.0, 1200.0],
-    }, index=pd.DatetimeIndex([
-        datetime(2023, 1, 1),
-        datetime(2023, 1, 2),
-        datetime(2023, 1, 3),
-    ]))
+        "open": 100.0,
+        "high": 101.0,
+        "low": 99.0,
+        "close": 100.5,
+        "volume": 1000.0,
+    }, index=btc_dates)
 
-    # ETH starts on June 1, 2023 (much later)
+    # ETH: June 1 - June 30 (lists later)
+    eth_dates = pd.date_range(datetime(2023, 6, 1), datetime(2023, 6, 30), freq="D")
     eth_data = pd.DataFrame({
-        "open": [200.0, 201.0],
-        "high": [201.0, 202.0],
-        "low": [199.0, 200.0],
-        "close": [200.5, 201.5],
-        "volume": [2000.0, 2100.0],
-    }, index=pd.DatetimeIndex([
-        datetime(2023, 6, 1),
-        datetime(2023, 6, 2),
-    ]))
+        "open": 200.0,
+        "high": 201.0,
+        "low": 199.0,
+        "close": 200.5,
+        "volume": 2000.0,
+    }, index=eth_dates)
 
     store.add_ohlcv("BTC/USDT", btc_data)
     store.add_ohlcv("ETH/USDT", eth_data)
 
-    # Test 1: March 1 - BTC should be available, ETH should NOT
+    # Test 1: March 1 - BTC available, ETH NOT (hasn't listed yet)
     available_march = store.available_symbols(datetime(2023, 3, 1))
 
-    assert "BTC/USDT" in available_march, "BTC should be available (was listed before March)"
+    assert "BTC/USDT" in available_march, "BTC should be available"
     assert "ETH/USDT" not in available_march, "ETH should NOT be available (not listed until June)"
 
-    # Test 2: June 1 - Both should be available
+    # Test 2: June 1 - Both available
     available_june = store.available_symbols(datetime(2023, 6, 1))
 
     assert "BTC/USDT" in available_june
