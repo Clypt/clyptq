@@ -32,6 +32,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     environment: clyptq
+    if: github.repository == 'Clypt/clyptq' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
 
     steps:
     - uses: actions/checkout@v4
