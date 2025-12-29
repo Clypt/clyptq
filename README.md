@@ -11,7 +11,9 @@ Quantitative trading system for cryptocurrency markets featuring alpha factor co
 - Alpha factor framework with extensible factor library
 - Multiple portfolio construction strategies (Top-N, Score-Weighted, Risk Parity)
 - Event-driven backtesting engine with look-ahead bias prevention
-- Live trading via CCXT integration
+- Paper/Live trading with real-time factor-based execution
+- CCXT integration for 100+ cryptocurrency exchanges
+- Rolling window data management for live trading
 - Comprehensive performance analytics with auto-detecting time frequencies
 - Cash constraint enforcement and overselling prevention
 - Proper rebalancing timing control
@@ -102,6 +104,58 @@ from clyptq.analytics.metrics import print_metrics
 print_metrics(result.metrics)
 ```
 
+## Paper Trading
+
+```python
+from clyptq.data.live_store import LiveDataStore
+from clyptq.execution.live import CCXTExecutor
+from clyptq import EngineMode
+from datetime import datetime
+import time
+
+# Setup
+strategy = MyStrategy()
+universe = ["BTC/USDT", "ETH/USDT", "BNB/USDT"]
+
+cost_model = CostModel(maker_fee=0.001, taker_fee=0.001, slippage_bps=5.0)
+executor = CCXTExecutor(
+    exchange_id="binance",
+    api_key="YOUR_KEY",
+    api_secret="YOUR_SECRET",
+    paper_mode=True,
+    cost_model=cost_model,
+)
+
+# Fetch historical for warmup
+store = LiveDataStore(lookback_days=strategy.warmup_periods() + 30)
+for symbol in universe:
+    df = executor.fetch_historical(symbol, days=strategy.warmup_periods() + 30)
+    store.add_historical(symbol, df)
+
+# Create engine
+engine = Engine(
+    strategy=strategy,
+    data_store=store,
+    mode=EngineMode.PAPER,
+    executor=executor,
+    initial_capital=10000.0,
+)
+
+# Main loop
+while True:
+    now = datetime.now()
+    prices = executor.fetch_prices(universe)
+
+    result = engine.step(now, prices)
+
+    if result.action == "rebalance":
+        print(f"Rebalanced: {len(result.fills)} fills")
+        for fill in result.fills:
+            print(f"  {fill.side} {fill.symbol}: {fill.amount} @ {fill.price}")
+
+    time.sleep(60)
+```
+
 ## Architecture
 
 ```
@@ -112,7 +166,8 @@ clyptq/
 │   ├── main.py           # CLI entry point
 │   └── commands/         # CLI commands
 ├── data/
-│   ├── store.py          # Data storage
+│   ├── store.py          # Data storage (backtest)
+│   ├── live_store.py     # Rolling window data (live/paper)
 │   ├── validation.py     # Data quality
 │   ├── streaming/        # Real-time data
 │   ├── live/             # Live trading data
@@ -204,6 +259,7 @@ pytest tests/integration/test_parity.py -v
 3. Overselling prevention
 4. Rebalancing frequency control
 5. Backtest-Paper parity verification
+6. Engine.step() vs run_backtest() consistency
 
 ### CI/CD Notes
 

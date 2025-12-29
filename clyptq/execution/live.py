@@ -21,8 +21,8 @@ class CCXTExecutor(Executor):
     def __init__(
         self,
         exchange_id: str,
-        api_key: str,
-        api_secret: str,
+        api_key: str = "",
+        api_secret: str = "",
         paper_mode: bool = True,
         sandbox: bool = False,
         timeout: int = 30000,
@@ -33,16 +33,19 @@ class CCXTExecutor(Executor):
         self.order_tracker = OrderTracker()
 
         exchange_class = getattr(ccxt, exchange_id)
-        self.exchange = exchange_class(
-            {
-                "apiKey": api_key,
-                "secret": api_secret,
-                "sandbox": sandbox,
-                "enableRateLimit": True,
-                "timeout": timeout,
-                "options": {"defaultType": "spot"},
-            }
-        )
+        config = {
+            "enableRateLimit": True,
+            "timeout": timeout,
+            "options": {"defaultType": "spot"},
+        }
+
+        # only add credentials if provided (public API doesn't need them)
+        if api_key and api_secret:
+            config["apiKey"] = api_key
+            config["secret"] = api_secret
+            config["sandbox"] = sandbox
+
+        self.exchange = exchange_class(config)
 
         self.exchange_id = exchange_id
         self.timeout = timeout
@@ -58,6 +61,34 @@ class CCXTExecutor(Executor):
             except Exception as e:
                 print(f"Price fetch failed {symbol}: {e}")
         return prices
+
+    def fetch_historical(self, symbol: str, days: int = 90) -> "pd.DataFrame":
+        """Fetch historical OHLCV for warmup.
+
+        Args:
+            symbol: Trading symbol
+            days: Number of days to fetch
+
+        Returns:
+            DataFrame with columns [timestamp, open, high, low, close, volume]
+        """
+        import pandas as pd
+
+        try:
+            ohlcv = self.exchange.fetch_ohlcv(symbol, "1d", limit=days)
+
+            df = pd.DataFrame(
+                ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
+            )
+            df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+
+            return df
+
+        except Exception as e:
+            print(f"Historical fetch failed {symbol}: {e}")
+            return pd.DataFrame(
+                columns=["timestamp", "open", "high", "low", "close", "volume"]
+            )
 
     def _round_lot_size(self, symbol: str, amount: float) -> float:
         """Round to exchange lot size."""
