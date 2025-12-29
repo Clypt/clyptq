@@ -1,6 +1,6 @@
 """Tests for order state tracking."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from clyptq.execution.orders.tracker import OrderStatus, OrderTracker, TrackedOrder
 from clyptq.types import Fill, FillStatus, Order, OrderSide
@@ -36,7 +36,7 @@ def test_tracked_order_partial_fill():
         amount=0.5,
         price=50000.0,
         fee=25.0,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         status=FillStatus.PARTIAL,
     )
 
@@ -58,7 +58,7 @@ def test_tracked_order_full_fill():
         amount=1.0,
         price=50000.0,
         fee=50.0,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         status=FillStatus.FILLED,
     )
 
@@ -133,7 +133,7 @@ def test_order_tracker_get_pending_orders():
             amount=1.0,
             price=50000.0,
             fee=50.0,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             status=FillStatus.FILLED,
         )
     )
@@ -170,12 +170,12 @@ def test_order_tracker_cleanup_old_orders():
             amount=1.0,
             price=50000.0,
             fee=50.0,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             status=FillStatus.FILLED,
         )
     )
 
-    tracked.updated_at = datetime.utcnow() - timedelta(days=2)
+    tracked.updated_at = datetime.now(timezone.utc) - timedelta(days=2)
 
     assert len(tracker.orders) == 1
     tracker.cleanup_old_orders(max_age_seconds=86400)
@@ -195,7 +195,7 @@ def test_order_tracker_cleanup_keeps_recent():
             amount=1.0,
             price=50000.0,
             fee=50.0,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             status=FillStatus.FILLED,
         )
     )
@@ -210,7 +210,7 @@ def test_order_tracker_cleanup_keeps_pending():
     order = Order(symbol="BTC/USDT", side=OrderSide.BUY, amount=1.0)
     tracked = tracker.create_order(order)
 
-    tracked.updated_at = datetime.utcnow() - timedelta(days=2)
+    tracked.updated_at = datetime.now(timezone.utc) - timedelta(days=2)
 
     tracker.cleanup_old_orders(max_age_seconds=86400)
     assert len(tracker.orders) == 1

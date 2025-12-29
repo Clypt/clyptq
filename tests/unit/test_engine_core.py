@@ -249,7 +249,7 @@ def test_backtest_with_multiple_timestamps_per_day():
     dates = pd.date_range(
         start=datetime(2023, 1, 1),
         periods=48,  # 2 days of hourly data
-        freq="H"
+        freq="h"
     )
 
     data = pd.DataFrame({
