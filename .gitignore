@@ -52,7 +52,7 @@ dmypy.json
 *.parquet
 *.h5
 *.hdf5
-data/
+/data/
 cache/
 
 # Environment variables
