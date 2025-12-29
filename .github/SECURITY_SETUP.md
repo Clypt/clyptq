@@ -17,17 +17,25 @@
 - 배포 전 승인 필수 (악의적 태그 push 차단)
 - 특정 태그 패턴만 배포 허용
 
-### 2. Tag Protection Rules (권장)
-**Path**: `Settings` → `Code and automation` → `Tags` → `Protected tags`
+### 2. Repository Rulesets (권장) - Tag Protection
+**Path**: `Settings` → `Code and automation` → `Rules` → `Rulesets` → `New ruleset` → `New tag ruleset`
 
 설정:
-- Pattern: `v*`
-- ✅ **Allowed to create matching tags**: Restrict to administrators
-- 또는 특정 팀/사용자만 허용
+- **Ruleset Name**: "Protect release tags"
+- **Enforcement status**: Active
+- **Target tags**:
+  - Include by pattern: `v*`
+- **Rules**:
+  - ✅ **Restrict creations**: Check
+    - Restrict who can create matching tags
+    - Add exception: Repository administrators (또는 특정 팀/역할만)
+  - ✅ **Restrict deletions**: Check
+  - ✅ **Restrict updates**: Check
 
 **효과**:
-- 관리자만 `v*` 태그 생성 가능
-- Contributor가 임의로 배포 태그 생성 불가
+- 관리자/지정된 사용자만 `v*` 태그 생성 가능
+- Contributor가 임의로 배포 태그 생성/삭제 불가
+- 기존 태그 덮어쓰기 방지
 
 ### 3. Actions General Settings
 **Path**: `Settings` → `Actions` → `General`
@@ -44,21 +52,35 @@
 - Fork에서의 PR은 secrets 접근 불가
 - 악의적 contributor가 secrets 탈취 불가
 
-### 4. Branch Protection Rules (선택사항)
-**Path**: `Settings` → `Branches` → `Branch protection rules`
+### 4. Repository Rulesets (선택사항) - Branch Protection
+**Path**: `Settings` → `Code and automation` → `Rules` → `Rulesets` → `New ruleset` → `New branch ruleset`
 
 **Branch name pattern**: `master` (또는 `main`)
 
 설정:
-- ✅ **Require a pull request before merging**
-- ✅ **Require status checks to pass before merging**
-  - Required checks: `test (3.10)`, `test (3.11)`, `test (3.12)`
-- ✅ **Require conversation resolution before merging**
-- ✅ **Do not allow bypassing the above settings** (admins도 포함)
+- **Ruleset Name**: "Protect master branch"
+- **Enforcement status**: Active
+- **Target branches**:
+  - Include by pattern: `master` (또는 `main`)
+- **Rules**:
+  - ✅ **Require a pull request before merging**
+    - Required approving review count: 1
+  - ✅ **Require status checks to pass**
+    - Status checks that are required:
+      - `test (3.10)`
+      - `test (3.11)`
+      - `test (3.12)`
+  - ✅ **Require conversation resolution before merging**
+  - ✅ **Block force pushes**
+  - ✅ **Restrict deletions**
+
+**Bypass list** (선택사항):
+- Repository administrators (필요시 체크, 그렇지 않으면 비워두기)
 
 **효과**:
 - 직접 push 방지
 - CI 통과 필수
+- PR 리뷰 필수
 
 ## 🛡️ 현재 적용된 Workflow 보호
 
@@ -77,7 +99,8 @@ publish:
 - ❌ Fork 저장소에서 실행 (`github.repository` 체크)
 - ❌ Pull request에서 실행 (`github.event_name` 체크)
 - ❌ 브랜치 push에서 실행 (`startsWith(github.ref, 'refs/tags/v')` 체크)
-- ❌ 환경 승인 없이 실행 (`environment: clyptq`)
+- ❌ 환경 승인 없이 실행 (`environment: clyptq` + Required reviewers)
+- ❌ Contributor의 임의 태그 생성 (Repository Rulesets - Tag protection)
 
 ## 📋 배포 체크리스트
 
@@ -130,12 +153,15 @@ publish:
    - 보안 감사 로그 확인
 
 3. **예방 조치**:
-   - Tag protection rules 재확인
+   - Repository Rulesets 재확인 (Tag + Branch protection)
    - Environment reviewers 업데이트
    - 2FA 활성화 확인
+   - Workflow 조건문 검증
 
 ## 📚 참고 자료
 
 - [GitHub Actions Security Hardening](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)
 - [PyPI Security Best Practices](https://pypi.org/help/#apitoken)
 - [Environment Protection Rules](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment)
+- [Repository Rulesets (NEW)](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets)
+- [Creating Tag Rulesets](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/creating-rulesets-for-a-repository)
