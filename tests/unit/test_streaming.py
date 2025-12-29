@@ -1,6 +1,7 @@
 """Test streaming data sources."""
 
 import asyncio
+import os
 from datetime import datetime
 
 import pytest
@@ -8,6 +9,7 @@ import pytest
 from clyptq.data.streaming.ccxt_stream import CCXTStreamingSource
 
 
+@pytest.mark.skipif(os.getenv("GITHUB_ACTIONS") == "true", reason="Binance API geo-restricted in CI")
 @pytest.mark.asyncio
 async def test_streaming_source_lifecycle():
     """Test start/stop cycle."""
@@ -30,6 +32,7 @@ async def test_streaming_source_lifecycle():
         assert not stream.is_running()
 
 
+@pytest.mark.skipif(os.getenv("GITHUB_ACTIONS") == "true", reason="Binance API geo-restricted in CI")
 @pytest.mark.asyncio
 async def test_streaming_receives_prices():
     """Test price updates (real exchange, quick test)."""
@@ -55,6 +58,7 @@ async def test_streaming_receives_prices():
         assert "BTC/USDT" in ticks[-1], "BTC/USDT price should be present"
 
 
+@pytest.mark.skipif(os.getenv("GITHUB_ACTIONS") == "true", reason="Binance API geo-restricted in CI")
 @pytest.mark.asyncio
 async def test_concurrent_symbol_fetching():
     """Test concurrent price fetching."""
