@@ -12,7 +12,7 @@ from typing import Dict
 
 import numpy as np
 
-from clyptq.types import Constraints
+from clyptq.core.types import Constraints
 
 
 class PortfolioConstructor(ABC):

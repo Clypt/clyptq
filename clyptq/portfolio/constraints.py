@@ -10,7 +10,7 @@ Validates portfolio weights against constraints:
 
 from typing import Dict
 
-from clyptq.types import Constraints
+from clyptq.core.types import Constraints
 
 
 class ConstraintViolation(Exception):

@@ -3,7 +3,7 @@ from typing import List
 
 import numpy as np
 
-from clyptq.types import Fill, PerformanceMetrics, Snapshot
+from clyptq.core.types import Fill, PerformanceMetrics, Snapshot
 
 
 def auto_detect_periods_per_year(snapshots: List[Snapshot]) -> int:

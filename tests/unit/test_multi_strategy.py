@@ -11,7 +11,7 @@ from clyptq.strategy.base import StrategyBlender, SimpleStrategy
 from clyptq.factors.library.momentum import MomentumFactor
 from clyptq.factors.library.mean_reversion import ZScoreFactor
 from clyptq.portfolio.construction import TopNConstructor, ScoreWeightedConstructor
-from clyptq.types import Constraints
+from clyptq.core.types import Constraints
 from clyptq.data.store import DataStore
 
 

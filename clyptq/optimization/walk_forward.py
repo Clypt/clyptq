@@ -15,7 +15,7 @@ from clyptq.data.store import DataStore
 from clyptq.engine.core import Engine
 from clyptq.execution.backtest import BacktestExecutor
 from clyptq.strategy.base import Strategy
-from clyptq.types import BacktestResult, CostModel, EngineMode
+from clyptq.core.types import BacktestResult, CostModel, EngineMode
 
 
 @dataclass

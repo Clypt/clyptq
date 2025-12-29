@@ -11,7 +11,7 @@ from clyptq.optimization.walk_forward import WalkForwardOptimizer
 from clyptq.strategy.base import SimpleStrategy
 from clyptq.factors.library.momentum import MomentumFactor
 from clyptq.portfolio.construction import TopNConstructor
-from clyptq.types import Constraints
+from clyptq.core.types import Constraints
 from clyptq.data.store import DataStore
 
 
@@ -107,7 +107,7 @@ def test_generate_param_combinations():
 
 def test_extract_metric():
     """Test metric extraction."""
-    from clyptq.types import BacktestResult, EngineMode, PerformanceMetrics
+    from clyptq.core.types import BacktestResult, EngineMode, PerformanceMetrics
 
     metrics = PerformanceMetrics(
         total_return=0.25,

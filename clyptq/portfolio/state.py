@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
 
-from clyptq.types import Fill, OrderSide, Position, Snapshot
+from clyptq.core.types import Fill, OrderSide, Position, Snapshot
 
 
 class PortfolioState:

@@ -301,7 +301,7 @@ def test_backtest_with_multiple_timestamps_per_day():
 
 def test_order_generation_sells_first():
     """Test that sell orders are generated before buy orders."""
-    from clyptq.types import Order, OrderSide
+    from clyptq.core.types import Order, OrderSide
 
     store = create_test_datastore()
 

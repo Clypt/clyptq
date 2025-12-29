@@ -12,7 +12,7 @@ from clyptq.factors.library.momentum import MomentumFactor
 from clyptq.portfolio.construction import TopNConstructor
 from clyptq.portfolio.constraints import Constraints
 from clyptq.strategy.base import SimpleStrategy
-from clyptq.types import CostModel, EngineMode
+from clyptq.core.types import CostModel, EngineMode
 
 
 def test_delisting_forces_liquidation():

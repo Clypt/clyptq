@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Optional
 
-from clyptq.types import Position
+from clyptq.core.types import Position
 
 
 class PositionDiscrepancy:

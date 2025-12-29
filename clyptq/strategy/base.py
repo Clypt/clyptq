@@ -9,7 +9,7 @@ from typing import Dict, List, Optional
 
 from clyptq.factors.base import Factor
 from clyptq.portfolio.construction import PortfolioConstructor
-from clyptq.types import Constraints
+from clyptq.core.types import Constraints
 
 
 class Strategy(ABC):

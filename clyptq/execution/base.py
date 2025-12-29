@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Dict, List
 
-from clyptq.types import Fill, Order
+from clyptq.core.types import Fill, Order
 
 
 class Executor(ABC):

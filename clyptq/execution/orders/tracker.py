@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, List, Optional
 
-from clyptq.types import Fill, Order
+from clyptq.core.types import Fill, Order
 
 
 class OrderStatus(Enum):

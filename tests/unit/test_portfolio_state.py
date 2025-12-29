@@ -10,7 +10,7 @@ from datetime import datetime
 import pytest
 
 from clyptq.portfolio.state import PortfolioState
-from clyptq.types import Fill, OrderSide, FillStatus
+from clyptq.core.types import Fill, OrderSide, FillStatus
 
 
 def test_insufficient_cash_rejected():
