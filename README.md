@@ -205,6 +205,12 @@ pytest tests/integration/test_parity.py -v
 4. Rebalancing frequency control
 5. Backtest-Paper parity verification
 
+### CI/CD Notes
+
+- Streaming tests are skipped in GitHub Actions (Binance API geo-restricted)
+- Tests run fully in local development environment
+- All core functionality tests pass in CI
+
 ## Performance Metrics
 
 - Returns: Total, Annualized
