@@ -317,9 +317,16 @@ class SignalEvent:
     rebalance_needed: bool = True
 
 
-# ============================================================================
-# Data Store Types
-# ============================================================================
+@dataclass
+class ExecutionResult:
+    """Result from a single execution step (live/paper trading)."""
+
+    timestamp: datetime
+    action: str  # "rebalance" or "skip"
+    fills: List[Fill]
+    orders: List[Order]
+    snapshot: Snapshot
+    rebalance_reason: Optional[str] = None
 
 
 @dataclass

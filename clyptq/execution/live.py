@@ -62,6 +62,34 @@ class CCXTExecutor(Executor):
                 print(f"Price fetch failed {symbol}: {e}")
         return prices
 
+    def fetch_historical(self, symbol: str, days: int = 90) -> "pd.DataFrame":
+        """Fetch historical OHLCV for warmup.
+
+        Args:
+            symbol: Trading symbol
+            days: Number of days to fetch
+
+        Returns:
+            DataFrame with columns [timestamp, open, high, low, close, volume]
+        """
+        import pandas as pd
+
+        try:
+            ohlcv = self.exchange.fetch_ohlcv(symbol, "1d", limit=days)
+
+            df = pd.DataFrame(
+                ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
+            )
+            df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+
+            return df
+
+        except Exception as e:
+            print(f"Historical fetch failed {symbol}: {e}")
+            return pd.DataFrame(
+                columns=["timestamp", "open", "high", "low", "close", "volume"]
+            )
+
     def _round_lot_size(self, symbol: str, amount: float) -> float:
         """Round to exchange lot size."""
         if symbol not in self.exchange.markets:

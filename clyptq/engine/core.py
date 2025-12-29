@@ -21,6 +21,7 @@ from clyptq.strategy.base import Strategy
 from clyptq.types import (
     BacktestResult,
     EngineMode,
+    ExecutionResult,
     Fill,
     Order,
     OrderSide,
@@ -294,6 +295,140 @@ class Engine:
                 self.trades.append(fill)
             except ValueError as e:
                 print(f"Delisted liquidation failed: {e}")
+
+    def step(self, timestamp: datetime, prices: Dict[str, float]) -> ExecutionResult:
+        """Execute one trading step for live/paper trading.
+
+        Args:
+            timestamp: Current timestamp
+            prices: Current market prices {symbol: price}
+
+        Returns:
+            ExecutionResult with fills, orders, and snapshot
+        """
+        if self.mode not in [EngineMode.LIVE, EngineMode.PAPER]:
+            raise ValueError("step() only works in LIVE or PAPER modes")
+
+        from clyptq.data.live_store import LiveDataStore
+
+        if isinstance(self.data_store, LiveDataStore):
+            self.data_store.update(timestamp, prices)
+
+        snapshot = self.portfolio.get_snapshot(timestamp, prices)
+        self.snapshots.append(snapshot)
+
+        universe = self.strategy.universe()
+        if universe:
+            available = [s for s in universe if s in prices]
+        else:
+            available = list(prices.keys())
+
+        if not available:
+            return ExecutionResult(
+                timestamp=timestamp,
+                action="skip",
+                fills=[],
+                orders=[],
+                snapshot=snapshot,
+                rebalance_reason="no_symbols",
+            )
+
+        self._check_and_liquidate_delisted(timestamp, available, prices)
+
+        if not self._should_rebalance(timestamp):
+            return ExecutionResult(
+                timestamp=timestamp,
+                action="skip",
+                fills=[],
+                orders=[],
+                snapshot=snapshot,
+                rebalance_reason="schedule",
+            )
+
+        data = self.data_store.get_view(timestamp)
+        all_scores: Dict[str, float] = {}
+
+        for factor in self.factors:
+            try:
+                scores = factor.compute(data)
+                for symbol, score in scores.items():
+                    if symbol in all_scores:
+                        all_scores[symbol] = (all_scores[symbol] + score) / 2
+                    else:
+                        all_scores[symbol] = score
+            except Exception:
+                continue
+
+        if not all_scores:
+            return ExecutionResult(
+                timestamp=timestamp,
+                action="skip",
+                fills=[],
+                orders=[],
+                snapshot=snapshot,
+                rebalance_reason="no_scores",
+            )
+
+        target_weights = self.constructor.construct(all_scores, self.constraints)
+
+        if not target_weights:
+            return ExecutionResult(
+                timestamp=timestamp,
+                action="skip",
+                fills=[],
+                orders=[],
+                snapshot=snapshot,
+                rebalance_reason="no_weights",
+            )
+
+        current_weights = self.portfolio.get_weights(prices)
+        orders = self._generate_orders(current_weights, target_weights, snapshot.equity, prices)
+
+        if not orders:
+            return ExecutionResult(
+                timestamp=timestamp,
+                action="skip",
+                fills=[],
+                orders=[],
+                snapshot=snapshot,
+                rebalance_reason="no_orders",
+            )
+
+        if self.risk_manager:
+            orders = self.risk_manager.apply_position_limits(
+                orders, self.portfolio.positions, prices, snapshot.equity
+            )
+
+        if not orders:
+            return ExecutionResult(
+                timestamp=timestamp,
+                action="skip",
+                fills=[],
+                orders=[],
+                snapshot=snapshot,
+                rebalance_reason="risk_filtered",
+            )
+
+        fills = self.executor.execute(orders, timestamp, prices)
+
+        for fill in fills:
+            try:
+                self.portfolio.apply_fill(fill)
+                self.trades.append(fill)
+            except ValueError as e:
+                print(f"Fill rejected: {e}")
+                continue
+
+        final_snapshot = self.portfolio.get_snapshot(timestamp, prices)
+
+        return ExecutionResult(
+            timestamp=timestamp,
+            action="rebalance",
+            fills=fills,
+            orders=orders,
+            snapshot=final_snapshot,
+            rebalance_reason="scheduled",
+        )
 
     def run_live(self, interval_seconds: int = 60, verbose: bool = True) -> None:
         """Real-time loop. Don't fuck this up."""
