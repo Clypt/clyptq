@@ -24,6 +24,7 @@ from clyptq.core.types import (
     BacktestResult,
     PerformanceMetrics,
     ExecutionResult,
+    MonteCarloResult,
 )
 
 __all__ = [
@@ -48,4 +49,5 @@ __all__ = [
     "BacktestResult",
     "PerformanceMetrics",
     "ExecutionResult",
+    "MonteCarloResult",
 ]

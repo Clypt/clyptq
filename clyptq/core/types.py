@@ -379,3 +379,72 @@ class CacheStats:
         """Calculate current hit rate."""
         total = self.hits + self.misses
         self.hit_rate = self.hits / total if total > 0 else 0.0
+
+
+@dataclass
+class MonteCarloResult:
+    """Results from Monte Carlo simulation."""
+
+    num_simulations: int
+    final_equities: List[float]
+    equity_paths: List[List[float]]
+
+    # Summary statistics
+    mean_return: float
+    median_return: float
+    std_return: float
+
+    # Confidence intervals
+    ci_5_return: float
+    ci_50_return: float
+    ci_95_return: float
+
+    # Risk metrics
+    probability_of_loss: float
+    expected_shortfall_5: float
+    max_drawdown_5: float
+    max_drawdown_50: float
+    max_drawdown_95: float
+
+    # Sharpe confidence
+    mean_sharpe: float
+    ci_5_sharpe: float
+    ci_95_sharpe: float
+
+    # Simulation parameters
+    initial_capital: float
+    simulation_days: int
+    timestamp: datetime = field(default_factory=datetime.now)
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary for serialization."""
+        return {
+            "num_simulations": self.num_simulations,
+            "summary": {
+                "mean_return": self.mean_return,
+                "median_return": self.median_return,
+                "std_return": self.std_return,
+            },
+            "confidence_intervals": {
+                "5th_percentile": self.ci_5_return,
+                "50th_percentile": self.ci_50_return,
+                "95th_percentile": self.ci_95_return,
+            },
+            "risk_metrics": {
+                "probability_of_loss": self.probability_of_loss,
+                "expected_shortfall_5": self.expected_shortfall_5,
+                "max_drawdown_5": self.max_drawdown_5,
+                "max_drawdown_50": self.max_drawdown_50,
+                "max_drawdown_95": self.max_drawdown_95,
+            },
+            "sharpe_distribution": {
+                "mean": self.mean_sharpe,
+                "ci_5": self.ci_5_sharpe,
+                "ci_95": self.ci_95_sharpe,
+            },
+            "parameters": {
+                "initial_capital": self.initial_capital,
+                "simulation_days": self.simulation_days,
+                "timestamp": self.timestamp.isoformat(),
+            },
+        }
