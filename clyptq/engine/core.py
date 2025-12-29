@@ -18,7 +18,7 @@ from clyptq.risk.manager import RiskManager
 from clyptq.factors.base import Factor
 from clyptq.portfolio.construction import PortfolioConstructor
 from clyptq.strategy.base import Strategy
-from clyptq.types import (
+from clyptq.core.types import (
     BacktestResult,
     EngineMode,
     ExecutionResult,

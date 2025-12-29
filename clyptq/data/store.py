@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
-from clyptq.types import OHLCV, DataMetadata, DataRange
+from clyptq.core.types import OHLCV, DataMetadata, DataRange
 
 
 class DataView:

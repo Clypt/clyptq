@@ -160,35 +160,39 @@ while True:
 
 ```
 clyptq/
-├── types.py              # Core type definitions
-├── config.py             # Configuration
+├── core/                 # Core type definitions
+│   ├── __init__.py       # Type exports
+│   └── types.py          # Order, Fill, Position, Constraints, etc.
 ├── cli/                  # Command-line tools
 │   ├── main.py           # CLI entry point
 │   └── commands/         # CLI commands
 ├── data/
 │   ├── store.py          # Data storage (backtest)
 │   ├── live_store.py     # Rolling window data (live/paper)
-│   ├── validation.py     # Data quality
 │   ├── streaming/        # Real-time data
-│   ├── live/             # Live trading data
 │   └── loaders/
 │       └── ccxt.py       # CCXT loader
 ├── factors/
 │   ├── base.py           # Factor base
-│   ├── cache.py          # Caching
+│   ├── ops/              # Factor operations
+│   │   ├── time_series.py      # ts_mean, ts_std, correlation
+│   │   └── cross_sectional.py  # rank, normalize, winsorize
 │   └── library/
-│       ├── momentum.py   # Momentum
-│       └── volatility.py # Volatility
+│       ├── momentum.py         # Momentum factors
+│       ├── volatility.py       # Volatility factors
+│       └── mean_reversion.py   # Mean reversion factors
 ├── portfolio/
-│   ├── construction.py   # Constructors
-│   ├── constraints.py    # Constraints
+│   ├── construction.py   # TopN, ScoreWeighted, RiskParity, BlendedConstructor
+│   ├── constraints.py    # Position constraints
 │   └── state.py          # Portfolio state
+├── optimization/
+│   └── walk_forward.py   # Walk-forward optimization
 ├── execution/            # Order execution
 │   ├── base.py           # Base executor
 │   ├── backtest.py       # Backtest executor
 │   ├── live.py           # Live/Paper executor
-│   ├── orders/           # Order management
-│   └── positions/        # Position management
+│   ├── orders/           # Order tracking
+│   └── positions/        # Position synchronization
 ├── risk/                 # Risk management
 │   ├── costs.py          # Trading costs
 │   └── manager.py        # Risk manager

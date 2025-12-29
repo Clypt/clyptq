@@ -1,7 +1,7 @@
 """Test risk manager functionality."""
 
 from clyptq.risk.manager import RiskManager
-from clyptq.types import Order, OrderSide, Position
+from clyptq.core.types import Order, OrderSide, Position
 
 
 def test_position_size_limit_no_limit():

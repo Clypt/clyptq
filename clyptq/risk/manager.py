@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from clyptq.types import Order, OrderSide, Position
+from clyptq.core.types import Order, OrderSide, Position
 
 
 class RiskManager:

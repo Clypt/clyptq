@@ -2,7 +2,7 @@
 
 from typing import Dict, List
 
-from clyptq.types import CostModel, Fill, Order, OrderSide, OrderType
+from clyptq.core.types import CostModel, Fill, Order, OrderSide, OrderType
 
 
 def estimate_fill_cost(

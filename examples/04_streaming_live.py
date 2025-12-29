@@ -16,7 +16,7 @@ from clyptq.portfolio.constraints import Constraints
 from clyptq.risk.costs import CostModel
 from clyptq.risk.manager import RiskManager
 from clyptq.strategy.base import SimpleStrategy
-from clyptq.types import EngineMode
+from clyptq.core.types import EngineMode
 
 
 async def main():

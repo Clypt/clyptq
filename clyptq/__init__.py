@@ -1,58 +1,13 @@
 """
-Clypt Trading Engine - Alpha-factor based cryptocurrency trading system.
-
-A production-ready quantitative trading engine for cryptocurrency markets
-featuring alpha factor computation, portfolio optimization, and realistic
-backtesting with proper look-ahead bias prevention.
+ClyptQ - Production-grade quantitative cryptocurrency trading engine.
 """
 
-__version__ = "0.1.0"
-__author__ = "Clypt Team"
+__version__ = "0.4.0"
 
-from clyptq.types import (
-    # Enums
-    EngineMode,
-    FillStatus,
-    OrderSide,
-    OrderType,
-    # Market Data
-    OHLCV,
-    Quote,
-    # Trading
-    Fill,
-    Order,
-    Position,
-    # Portfolio
-    Snapshot,
-    # Performance
-    BacktestResult,
-    PerformanceMetrics,
-    # Config
-    Constraints,
-    CostModel,
-    EngineConfig,
-)
+from clyptq.core.types import Constraints, CostModel, EngineMode
 
 __all__ = [
-    # Enums
     "EngineMode",
-    "FillStatus",
-    "OrderSide",
-    "OrderType",
-    # Market Data
-    "OHLCV",
-    "Quote",
-    # Trading
-    "Fill",
-    "Order",
-    "Position",
-    # Portfolio
-    "Snapshot",
-    # Performance
-    "BacktestResult",
-    "PerformanceMetrics",
-    # Config
     "Constraints",
     "CostModel",
-    "EngineConfig",
 ]

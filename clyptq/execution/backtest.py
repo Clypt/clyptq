@@ -5,7 +5,7 @@ from typing import Dict, List
 
 from clyptq.risk.costs import apply_slippage, calculate_fee
 from clyptq.execution.base import Executor
-from clyptq.types import CostModel, Fill, FillStatus, Order
+from clyptq.core.types import CostModel, Fill, FillStatus, Order
 
 
 class BacktestExecutor(Executor):

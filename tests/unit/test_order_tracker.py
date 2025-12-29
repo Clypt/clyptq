@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta, timezone
 
 from clyptq.execution.orders.tracker import OrderStatus, OrderTracker, TrackedOrder
-from clyptq.types import Fill, FillStatus, Order, OrderSide
+from clyptq.core.types import Fill, FillStatus, Order, OrderSide
 
 
 def test_tracked_order_creation():
