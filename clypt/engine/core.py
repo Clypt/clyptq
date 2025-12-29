@@ -1,3 +1,4 @@
+import asyncio
 import time
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -8,6 +9,7 @@ from clypt.analytics.metrics import compute_metrics
 from clypt.data.live.view import LiveDataView
 from clypt.data.live.buffer import RollingPriceBuffer
 from clypt.data.store import DataStore
+from clypt.data.streaming.base import StreamingDataSource
 from clypt.risk.costs import CostModel
 from clypt.execution.base import Executor
 from clypt.portfolio.state import PortfolioState
@@ -471,6 +473,64 @@ class Engine:
         except Exception as e:
             if verbose:
                 print(f"Position sync check failed: {e}")
+
+    async def run_live_stream(
+        self, stream: StreamingDataSource, verbose: bool = True
+    ) -> None:
+        """
+        Real-time trading with streaming data.
+
+        Uses async streaming (WebSocket-style) for minimal latency.
+        """
+        if self.mode not in [EngineMode.LIVE, EngineMode.PAPER]:
+            raise ValueError("run_live_stream only works in LIVE or PAPER modes")
+
+        universe = self.strategy.universe()
+        if not universe:
+            raise ValueError("Strategy must define universe() for live trading")
+
+        if verbose:
+            print(f"Streaming started ({self.mode.value})")
+            print(f"Universe: {universe}")
+
+        iteration = 0
+        position_sync_interval = 100
+
+        def on_tick(timestamp: datetime, prices: Dict[str, float]) -> None:
+            """Handle each price tick."""
+            nonlocal iteration
+
+            try:
+                self._process_live_timestamp(timestamp, prices)
+
+                if iteration % position_sync_interval == 0:
+                    self._check_position_sync(verbose)
+
+                if hasattr(self.executor, 'cleanup_old_orders'):
+                    if iteration % 100 == 0:
+                        self.executor.cleanup_old_orders()
+
+                if verbose and iteration % 10 == 0:
+                    equity = self.snapshots[-1].equity if self.snapshots else 0
+                    print(f"{timestamp.strftime('%H:%M:%S')} | ${equity:.2f}")
+
+            except Exception as e:
+                if verbose:
+                    print(f"Error: {e}")
+
+            iteration += 1
+
+        try:
+            await stream.start(universe, on_tick)
+            while stream.is_running():
+                await asyncio.sleep(1)
+        except KeyboardInterrupt:
+            if verbose:
+                print("\nStopping stream...")
+        finally:
+            await stream.stop()
+            if verbose:
+                print("Stopped.")
 
     def reset(self) -> None:
         self.portfolio.reset()

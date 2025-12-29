@@ -1,6 +1,8 @@
-"""Test SaaS export functionality for backtest results."""
+"""Test SaaS export functionality."""
 
 from datetime import datetime, timedelta
+import json
+
 from clypt.types import (
     BacktestResult,
     EngineMode,
@@ -11,12 +13,10 @@ from clypt.types import (
     Position,
     Snapshot,
 )
-import json
 
 
 def test_backtest_result_export():
     """Test BacktestResult.to_dict() and to_json() methods."""
-
     start_date = datetime(2024, 1, 1)
     end_date = datetime(2024, 1, 5)
 
@@ -84,43 +84,19 @@ def test_backtest_result_export():
 
     # Test to_dict()
     result_dict = result.to_dict()
-
-    print("✅ BacktestResult.to_dict() successful")
-    print(f"\nStrategy: {result_dict['strategy_name']}")
-    print(f"Mode: {result_dict['mode']}")
-    print(f"Equity Curve Points: {len(result_dict['equity_curve'])}")
-    print(f"Trades: {len(result_dict['trades'])}")
-    print(f"Positions Timeline: {len(result_dict['positions_timeline'])}")
-    print(f"Drawdown Series Points: {len(result_dict['drawdown_series'])}")
+    assert result_dict["strategy_name"] == "MomentumStrategy"
+    assert result_dict["mode"] == "backtest"
+    assert len(result_dict["equity_curve"]) == 5
+    assert len(result_dict["trades"]) == 2
 
     # Test to_json()
     result_json = result.to_json(indent=2)
-
-    print("\n✅ BacktestResult.to_json() successful")
-    print(f"JSON string length: {len(result_json)} characters")
-
-    # Verify JSON is valid
     parsed = json.loads(result_json)
+
     assert parsed["strategy_name"] == "MomentumStrategy"
     assert parsed["mode"] == "backtest"
     assert len(parsed["equity_curve"]) == 5
     assert len(parsed["trades"]) == 2
-
-    print("\n✅ JSON validation successful")
-
-    # Print sample equity curve
-    print("\nSample Equity Curve (first 2 points):")
-    for point in result_dict["equity_curve"][:2]:
-        print(f"  {point['timestamp']}: equity=${point['equity']:.2f}, cash=${point['cash']:.2f}")
-
-    # Print metrics summary
-    print("\nMetrics Summary:")
-    print(f"  Total Return: {result_dict['metrics']['total_return']:.2%}")
-    print(f"  Sharpe Ratio: {result_dict['metrics']['sharpe_ratio']:.2f}")
-    print(f"  Max Drawdown: {result_dict['metrics']['max_drawdown']:.2%}")
-    print(f"  Win Rate: {result_dict['metrics']['win_rate']:.2%}")
-
-    print("\n✅ All tests passed! SaaS export ready.")
 
 
 if __name__ == "__main__":

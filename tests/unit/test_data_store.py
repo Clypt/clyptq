@@ -96,6 +96,56 @@ def test_available_symbols_edge_cases():
     assert "SINGLE/USDT" not in available_before
 
 
+def test_available_symbols_delisting():
+    """Test that delisted symbols are not available after delisting date."""
+    store = DataStore()
+
+    # Delisted coin (YFII-style: ends at 2023-08-22)
+    delisted_data = pd.DataFrame({
+        "open": [100.0, 101.0, 102.0],
+        "high": [101.0, 102.0, 103.0],
+        "low": [99.0, 100.0, 101.0],
+        "close": [100.5, 101.5, 102.5],
+        "volume": [1000.0, 1100.0, 1200.0],
+    }, index=pd.DatetimeIndex([
+        datetime(2023, 8, 20),
+        datetime(2023, 8, 21),
+        datetime(2023, 8, 22),
+    ]))
+
+    # Active coin
+    active_data = pd.DataFrame({
+        "open": [200.0, 201.0, 202.0, 203.0],
+        "high": [201.0, 202.0, 203.0, 204.0],
+        "low": [199.0, 200.0, 201.0, 202.0],
+        "close": [200.5, 201.5, 202.5, 203.5],
+        "volume": [2000.0, 2100.0, 2200.0, 2300.0],
+    }, index=pd.DatetimeIndex([
+        datetime(2023, 8, 20),
+        datetime(2023, 8, 21),
+        datetime(2023, 8, 22),
+        datetime(2023, 8, 23),
+    ]))
+
+    store.add_ohlcv("YFII/USDT", delisted_data)
+    store.add_ohlcv("BTC/USDT", active_data)
+
+    # On last trading day - both available
+    available_aug22 = store.available_symbols(datetime(2023, 8, 22))
+    assert "YFII/USDT" in available_aug22
+    assert "BTC/USDT" in available_aug22
+
+    # After delisting - only active coin available
+    available_aug23 = store.available_symbols(datetime(2023, 8, 23))
+    assert "YFII/USDT" not in available_aug23, "Delisted coin should NOT be available"
+    assert "BTC/USDT" in available_aug23
+
+    # Few days later - delisted coin still not available
+    available_future = store.available_symbols(datetime(2023, 8, 25))
+    assert "YFII/USDT" not in available_future
+    assert "BTC/USDT" not in available_future  # BTC data also ended at Aug 23
+
+
 def test_dataview_temporal_consistency():
     """Test that DataView only provides historical data."""
     store = DataStore()

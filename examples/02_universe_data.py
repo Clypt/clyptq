@@ -1,4 +1,17 @@
-"""Use pre-downloaded universe data (fast, no API calls)."""
+"""
+Example 2: Pre-downloaded Universe Data
+
+Shows how to:
+- Use pre-downloaded data (faster, no API calls)
+- Load from disk
+- Run backtests offline
+
+Prerequisites:
+    clypt-engine data download --symbols BTC/USDT ETH/USDT BNB/USDT --days 90
+
+Usage:
+    python examples/02_universe_data.py
+"""
 
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -16,65 +29,59 @@ from clypt.portfolio.construction import TopNConstructor
 from clypt.strategy.base import SimpleStrategy
 
 
-def load_universe_from_disk(universe_size: int = 10, exchange: str = "binance", market: str = "spot"):
-    """Load pre-downloaded data. Run 'clypt-engine data download' first."""
+def load_from_disk(n: int = 10, exchange: str = "binance", market: str = "spot") -> DataStore:
+    """Load pre-downloaded data from disk."""
     data_path = Path(__file__).parent.parent / "data" / market / exchange / "1d"
 
     if not data_path.exists():
         raise FileNotFoundError(f"No data at {data_path}. Run: clypt-engine data download")
 
-    files = sorted(data_path.glob("*.parquet"))
-
-    if len(files) < universe_size:
-        raise ValueError(f"Only {len(files)} symbols, need {universe_size}")
+    files = sorted(data_path.glob("*.parquet"))[:n]
+    if not files:
+        raise ValueError(f"No data files found")
 
     store = DataStore()
-
-    print(f"\nLoading {universe_size} symbols")
-    for i, filepath in enumerate(files[:universe_size], 1):
+    for filepath in files:
         symbol = filepath.stem.replace("_", "/")
         df = pd.read_parquet(filepath)
         store.add_ohlcv(symbol, df, frequency="1d", source=exchange)
-        print(f"[{i:2d}/{universe_size}] {symbol:15s} {len(df)} bars")
 
-    print(f"Loaded {universe_size} symbols\n")
     return store
 
 
-class LargeUniverseStrategy(SimpleStrategy):
-    def __init__(self, universe_size: int = 10):
-        factors = [
-            MomentumFactor(lookback=20),
-            VolatilityFactor(lookback=20),
-        ]
+class BasicStrategy(SimpleStrategy):
+    """Basic momentum + volatility strategy."""
 
-        top_n = max(3, universe_size // 5)
+    def __init__(self):
+        factors = [MomentumFactor(lookback=20), VolatilityFactor(lookback=20)]
 
         constraints = Constraints(
             max_position_size=0.3,
             max_gross_exposure=1.0,
             min_position_size=0.05,
-            max_num_positions=top_n,
+            max_num_positions=3,
             allow_short=False,
         )
 
         super().__init__(
             factors_list=factors,
-            constructor=TopNConstructor(top_n=top_n),
+            constructor=TopNConstructor(top_n=3),
             constraints_obj=constraints,
             schedule_str="daily",
             warmup=25,
-            name=f"Universe{universe_size}",
+            name="Basic",
         )
 
 
 def main():
-    UNIVERSE_SIZE = 10
-    BACKTEST_DAYS = 60
+    # 1. Load from disk (fast!)
+    store = load_from_disk(n=10)
+    print(f"Loaded {len(store)} symbols")
 
-    store = load_universe_from_disk(universe_size=UNIVERSE_SIZE)
-    strategy = LargeUniverseStrategy(universe_size=UNIVERSE_SIZE)
+    # 2. Create strategy
+    strategy = BasicStrategy()
 
+    # 3. Setup backtest
     cost_model = CostModel(maker_fee=0.001, taker_fee=0.001, slippage_bps=5.0)
     executor = BacktestExecutor(cost_model)
 
@@ -86,14 +93,15 @@ def main():
         initial_capital=10000.0,
     )
 
+    # 4. Run
     date_range = store.get_date_range()
+    start_date = date_range.end - timedelta(days=60)
     end_date = date_range.end
-    start_date = end_date - timedelta(days=BACKTEST_DAYS)
 
     result = engine.run_backtest(start=start_date, end=end_date, verbose=True)
-    print_metrics(result.metrics)
 
-    print(f"\nBenefits: instant startup, offline dev, consistent data")
+    # 5. Results
+    print_metrics(result.metrics)
 
 
 if __name__ == "__main__":
