@@ -288,3 +288,79 @@ class RiskParityConstructor(PortfolioConstructor):
             weights = {s: w * scale for s, w in weights.items()}
 
         return weights
+
+
+class BlendedConstructor(PortfolioConstructor):
+    """
+    Blended portfolio constructor for multi-strategy allocation.
+
+    Runs multiple strategies independently and blends their target weights
+    according to allocation percentages.
+    """
+
+    def __init__(
+        self,
+        strategies: Dict[str, "Strategy"],
+        allocations: Dict[str, float],
+        factor_map: Dict[str, str],
+    ):
+        """
+        Initialize blended constructor.
+
+        Args:
+            strategies: Dict of {strategy_name: Strategy}
+            allocations: Dict of {strategy_name: allocation_weight}
+            factor_map: Dict of {factor_name: strategy_name}
+        """
+        if set(strategies.keys()) != set(allocations.keys()):
+            raise ValueError("Strategies and allocations must have same keys")
+
+        total_alloc = sum(allocations.values())
+        if abs(total_alloc - 1.0) > 1e-6:
+            raise ValueError(f"Allocations must sum to 1.0, got {total_alloc}")
+
+        self.strategies = strategies
+        self.allocations = allocations
+        self.factor_map = factor_map
+
+    def construct(
+        self, scores: Dict[str, float], constraints: Constraints
+    ) -> Dict[str, float]:
+        """
+        Construct blended portfolio from multiple strategies.
+
+        Each strategy uses the combined scores but applies its own constructor
+        and constraints. The resulting weights are blended according to allocations.
+
+        Args:
+            scores: Combined scores from all factors (symbol: score)
+            constraints: Portfolio constraints
+
+        Returns:
+            Blended target weights
+        """
+        if not scores:
+            return {}
+
+        strategy_weights: Dict[str, Dict[str, float]] = {}
+
+        for strategy_name, strategy in self.strategies.items():
+            constructor = strategy.portfolio_constructor()
+            strategy_constraints = strategy.constraints()
+            weights = constructor.construct(scores, strategy_constraints)
+            strategy_weights[strategy_name] = weights
+
+        blended_weights: Dict[str, float] = {}
+        for strategy_name, weights in strategy_weights.items():
+            allocation = self.allocations[strategy_name]
+            for symbol, weight in weights.items():
+                blended_weights[symbol] = (
+                    blended_weights.get(symbol, 0.0) + weight * allocation
+                )
+
+        total_weight = sum(abs(w) for w in blended_weights.values())
+        if total_weight > constraints.max_gross_exposure:
+            scale = constraints.max_gross_exposure / total_weight
+            blended_weights = {s: w * scale for s, w in blended_weights.items()}
+
+        return blended_weights
