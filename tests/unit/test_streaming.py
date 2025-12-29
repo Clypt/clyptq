@@ -43,7 +43,8 @@ async def test_streaming_receives_prices():
     task = asyncio.create_task(stream.start(["BTC/USDT"], on_tick))
 
     try:
-        await asyncio.sleep(1.0)  # Wait a bit longer
+        # Wait for markets to load (~0.7s) + a few ticks
+        await asyncio.sleep(2.0)
     finally:
         # Always cleanup
         await stream.stop()
@@ -68,7 +69,8 @@ async def test_concurrent_symbol_fetching():
     task = asyncio.create_task(stream.start(symbols, on_tick))
 
     try:
-        await asyncio.sleep(1.0)
+        # Wait for markets to load (~0.7s) + a few ticks
+        await asyncio.sleep(2.0)
     finally:
         # Always cleanup
         await stream.stop()
