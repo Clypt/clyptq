@@ -8,15 +8,20 @@ Quantitative trading system for cryptocurrency markets featuring alpha factor co
 
 ## Features
 
-- Alpha factor framework with extensible factor library
-- Multiple portfolio construction strategies (Top-N, Score-Weighted, Risk Parity)
+- Alpha factor framework with 15+ production-ready factors
+- Multiple portfolio construction strategies (Top-N, Score-Weighted, Risk Parity, Blended)
 - Event-driven backtesting engine with look-ahead bias prevention
 - Paper/Live trading with real-time factor-based execution
+- Multi-timeframe support (1h, 4h, 1d, 1w) with automatic alignment
+- Monte Carlo simulation with confidence intervals and risk metrics
+- Performance attribution (factor/asset contribution, cost breakdown)
+- Rolling metrics (Sharpe, Sortino, volatility, drawdown)
+- HTML report generation with equity curves and analytics
 - CCXT integration for 100+ cryptocurrency exchanges
-- Rolling window data management for live trading
-- Comprehensive performance analytics with auto-detecting time frequencies
+- Walk-forward optimization for parameter tuning
+- Multi-strategy blending with flexible allocation
 - Cash constraint enforcement and overselling prevention
-- Proper rebalancing timing control
+- Deterministic backtests for reproducibility
 
 ## Installation
 
@@ -184,10 +189,14 @@ clyptq/
 │   ├── ops/                    # Factor operations
 │   │   ├── time_series.py      # ts_mean, ts_std, correlation
 │   │   └── cross_sectional.py  # rank, normalize, winsorize
+│   ├── mtf_factor.py           # MultiTimeframeFactor base
 │   └── library/
-│       ├── momentum.py         # Momentum factors
+│       ├── momentum.py         # Momentum, MultiTimeframeMomentum
 │       ├── volatility.py       # Volatility factors
-│       └── mean_reversion.py   # Mean reversion factors
+│       ├── mean_reversion.py   # Bollinger, ZScore, Percentile
+│       ├── volume.py           # Volume, VolumeRatio, DollarVolume
+│       ├── liquidity.py        # Amihud, EffectiveSpread, VolOfVol
+│       └── size.py             # DollarVolumeSize
 ├── portfolio/
 │   ├── constructors.py         # TopN, ScoreWeighted, RiskParity, BlendedConstructor
 │   ├── constraints.py          # Position constraints
@@ -292,10 +301,14 @@ pytest tests/integration/test_parity.py -v
 
 ## Performance Metrics
 
-- Returns: Total, Annualized
-- Risk: Volatility, Sharpe, Sortino, Max Drawdown
+- Returns: Total, Annualized, CAGR
+- Risk: Volatility, Sharpe, Sortino, Calmar, Max Drawdown
 - Trading: Win Rate, Profit Factor, Average P&L
 - Exposure: Leverage, Number of Positions
+- Attribution: Factor contribution, Asset contribution, Cost breakdown
+- Rolling: Rolling Sharpe, Sortino, Volatility, Drawdown
+- Drawdown: Duration, Recovery time, Underwater periods
+- Monte Carlo: Confidence intervals, CVaR, Loss probability
 
 ## License
 
