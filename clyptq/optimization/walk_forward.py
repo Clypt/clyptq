@@ -11,10 +11,10 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from clyptq.data.store import DataStore
-from clyptq.engine.core import Engine
+from clyptq.data.stores.store import DataStore
+from clyptq.engine import Engine
 from clyptq.execution.backtest import BacktestExecutor
-from clyptq.strategy.base import Strategy
+from clyptq.core.base import Strategy
 from clyptq.core.types import BacktestResult, CostModel, EngineMode
 
 
@@ -185,12 +185,11 @@ class WalkForwardOptimizer:
                 engine = Engine(
                     strategy=strategy,
                     data_store=data_store,
-                    mode=EngineMode.BACKTEST,
                     executor=executor,
                     initial_capital=self.initial_capital,
                 )
 
-                result = engine.run_backtest(start, end, verbose=False)
+                result = engine.run(start, end, verbose=False)
                 metric_value = self._extract_metric(result)
 
                 is_better = (
@@ -230,12 +229,11 @@ class WalkForwardOptimizer:
         engine = Engine(
             strategy=strategy,
             data_store=data_store,
-            mode=EngineMode.BACKTEST,
             executor=executor,
             initial_capital=self.initial_capital,
         )
 
-        result = engine.run_backtest(start, end, verbose=False)
+        result = engine.run(start, end, verbose=False)
         metric_value = self._extract_metric(result)
 
         return result, metric_value

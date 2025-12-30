@@ -7,8 +7,8 @@ from pathlib import Path
 
 from clyptq import EngineMode
 from clyptq.analytics.metrics import print_metrics
-from clyptq.data.store import DataStore
-from clyptq.engine.core import Engine
+from clyptq.data.stores.store import DataStore
+from clyptq.engine import Engine
 from clyptq.execution import BacktestExecutor
 from clyptq.risk import CostModel
 

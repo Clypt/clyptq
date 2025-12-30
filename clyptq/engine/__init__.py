@@ -1,19 +1,8 @@
-"""Backtesting engine."""
+"""Trading engines."""
 
-from clyptq.engine.core import Engine
+from clyptq.engine.backtest import BacktestEngine
+from clyptq.engine.live import LiveEngine
 
-# Re-export for backward compatibility
-from clyptq.execution import BacktestExecutor
-from clyptq.execution.live import CCXTExecutor as LiveExecutor
-from clyptq.portfolio.state import PortfolioState
-from clyptq.risk import CostModel, RiskManager
+Engine = BacktestEngine
 
-__all__ = [
-    "Engine",
-    "BacktestExecutor",
-    "LiveExecutor",
-    "CCXTExecutor",
-    "CostModel",
-    "PortfolioState",
-    "RiskManager",
-]
+__all__ = ["BacktestEngine", "LiveEngine", "Engine"]

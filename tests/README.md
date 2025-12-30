@@ -23,16 +23,46 @@ pytest -v
 
 ### Unit Tests (`tests/unit/`)
 
-Test individual components in isolation:
+Test individual components in isolation (organized by category):
 
-- **test_data_store.py** - Look-ahead bias prevention, data availability
-- **test_portfolio_state.py** - Cash constraints, overselling prevention
-- **test_engine_core.py** - Rebalancing frequency, order generation
-- **test_risk_manager.py** - Position limits, stop loss, take profit
-- **test_order_tracker.py** - Order state tracking
-- **test_position_sync.py** - Position synchronization
-- **test_live_factors.py** - Live data factor computation
-- **test_saas_export.py** - Result export functionality
+**Analytics** (`analytics/`)
+- test_attribution.py - Performance attribution analysis
+- test_drawdown.py - Drawdown period detection
+- test_rolling.py - Rolling metrics calculation
+- test_report.py - HTML report generation
+- test_monte_carlo.py - Monte Carlo simulation
+
+**Data** (`data/`)
+- test_data_store.py - Look-ahead bias prevention, data availability
+- test_live_data_store.py - Rolling window data management
+- test_multi_timeframe.py - Multi-timeframe data handling
+
+**Engine** (`engine/`)
+- test_engine_core.py - Rebalancing frequency, order generation
+- test_engine_step.py - Live/paper trading step execution
+- test_delisting.py - Delisting auto-liquidation
+- test_saas_export.py - Result export functionality
+
+**Execution** (`execution/`)
+- test_order_tracker.py - Order state tracking
+- test_position_sync.py - Position synchronization
+
+**Factors** (`factors/`)
+- test_mean_reversion.py - Mean reversion factors
+- test_live_factors.py - Live data factor computation
+
+**Portfolio** (`portfolio/`)
+- test_portfolio_state.py - Cash constraints, overselling prevention
+- test_multi_strategy.py - Multi-strategy blending
+
+**Risk** (`risk/`)
+- test_risk_manager.py - Position limits, stop loss, take profit
+
+**Optimization** (`optimization/`)
+- test_walk_forward.py - Walk-forward optimization
+
+**Streaming** (`streaming/`)
+- test_streaming.py - Real-time data streaming
 
 ### Integration Tests (`tests/integration/`)
 
