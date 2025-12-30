@@ -12,7 +12,7 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
-from clyptq.engine.core import Engine
+from clyptq.engine import Engine
 from clyptq.execution.backtest import BacktestExecutor
 from clyptq.data.store import DataStore
 from clyptq.core.base import Factor
@@ -222,7 +222,7 @@ def main():
 
     # Run backtest
     print("\n[5/5] Running backtest...")
-    result = engine.run_backtest(start, end, verbose=True)
+    result = engine.run(start, end, verbose=True)
 
     # Results
     print("\n" + "=" * 80)

@@ -11,7 +11,7 @@ import pytest
 
 from clyptq import Constraints, CostModel, EngineMode
 from clyptq.data.store import DataStore
-from clyptq.engine.core import Engine
+from clyptq.engine import Engine
 from clyptq.execution import BacktestExecutor
 from clyptq.core.base import Factor
 from clyptq.portfolio.construction import TopNConstructor
@@ -85,7 +85,6 @@ def test_daily_rebalance_once_per_day():
     engine = Engine(
         strategy=strategy,
         data_store=store,
-        mode=EngineMode.BACKTEST,
         executor=executor,
         initial_capital=10000.0,
     )
@@ -133,7 +132,6 @@ def test_weekly_rebalance_once_per_week():
     engine = Engine(
         strategy=strategy,
         data_store=store,
-        mode=EngineMode.BACKTEST,
         executor=executor,
         initial_capital=10000.0,
     )
@@ -179,7 +177,6 @@ def test_monthly_rebalance_once_per_month():
     engine = Engine(
         strategy=strategy,
         data_store=store,
-        mode=EngineMode.BACKTEST,
         executor=executor,
         initial_capital=10000.0,
     )
@@ -226,7 +223,6 @@ def test_should_rebalance_logic():
     engine = Engine(
         strategy=strategy_daily,
         data_store=store,
-        mode=EngineMode.BACKTEST,
         executor=executor,
         initial_capital=10000.0,
     )
@@ -281,13 +277,12 @@ def test_backtest_with_multiple_timestamps_per_day():
     engine = Engine(
         strategy=strategy,
         data_store=store,
-        mode=EngineMode.BACKTEST,
         executor=executor,
         initial_capital=10000.0,
     )
 
     # Run backtest (will use daily schedule despite hourly data)
-    result = engine.run_backtest(
+    result = engine.run(
         start=datetime(2023, 1, 1),
         end=datetime(2023, 1, 2),
         verbose=False,
@@ -323,7 +318,6 @@ def test_order_generation_sells_first():
     engine = Engine(
         strategy=strategy,
         data_store=store,
-        mode=EngineMode.BACKTEST,
         executor=executor,
         initial_capital=10000.0,
     )

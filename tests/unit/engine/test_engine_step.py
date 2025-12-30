@@ -6,7 +6,7 @@ import pandas as pd
 
 from clyptq import EngineMode
 from clyptq.data.live_store import LiveDataStore
-from clyptq.engine.core import Engine
+from clyptq.engine import LiveEngine
 from clyptq.execution.backtest import BacktestExecutor
 from clyptq.factors.library.momentum import MomentumFactor
 from clyptq.portfolio.construction import TopNConstructor
@@ -64,7 +64,7 @@ def test_step_skip_schedule():
 
     cost_model = CostModel()
     executor = BacktestExecutor(cost_model)
-    engine = Engine(strategy, store, EngineMode.PAPER, executor, initial_capital=10000)
+    engine = LiveEngine(strategy, store, executor, initial_capital=10000, mode=EngineMode.PAPER)
 
     prices = {"BTC/USDT": 130.0, "ETH/USDT": 130.0, "BNB/USDT": 130.0}
 
@@ -96,7 +96,7 @@ def test_step_rebalance():
 
     cost_model = CostModel()
     executor = BacktestExecutor(cost_model)
-    engine = Engine(strategy, store, EngineMode.PAPER, executor, initial_capital=10000)
+    engine = LiveEngine(strategy, store, executor, initial_capital=10000, mode=EngineMode.PAPER)
 
     prices = {"BTC/USDT": 115.0, "ETH/USDT": 115.0, "BNB/USDT": 115.0}
 
@@ -115,7 +115,7 @@ def test_step_no_symbols():
 
     cost_model = CostModel()
     executor = BacktestExecutor(cost_model)
-    engine = Engine(strategy, store, EngineMode.PAPER, executor, initial_capital=10000)
+    engine = LiveEngine(strategy, store, executor, initial_capital=10000, mode=EngineMode.PAPER)
 
     prices = {}
 
@@ -146,7 +146,7 @@ def test_step_updates_livestore():
 
     cost_model = CostModel()
     executor = BacktestExecutor(cost_model)
-    engine = Engine(strategy, store, EngineMode.PAPER, executor, initial_capital=10000)
+    engine = LiveEngine(strategy, store, executor, initial_capital=10000, mode=EngineMode.PAPER)
 
     initial_len = len(store.data["BTC/USDT"])
 

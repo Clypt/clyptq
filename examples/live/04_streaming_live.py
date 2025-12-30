@@ -8,7 +8,7 @@ import asyncio
 import os
 
 from clyptq.data.streaming.ccxt_stream import CCXTStreamingSource
-from clyptq.engine.core import Engine
+from clyptq.engine import Engine
 from clyptq.execution.live import LiveExecutor
 from clyptq.factors.library.momentum import MomentumFactor
 from clyptq.portfolio.construction import TopNConstructor

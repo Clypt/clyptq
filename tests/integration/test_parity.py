@@ -8,7 +8,7 @@ import pytest
 from clyptq import Constraints, CostModel, EngineMode
 from clyptq.data.live_store import LiveDataStore
 from clyptq.data.store import DataStore
-from clyptq.engine.core import Engine
+from clyptq.engine import BacktestEngine, LiveEngine
 from clyptq.execution import BacktestExecutor
 from clyptq.factors.library.momentum import MomentumFactor
 from clyptq.portfolio.construction import TopNConstructor
@@ -81,20 +81,18 @@ def test_backtest_paper_parity():
 
     # Run Backtest mode
     backtest_executor = BacktestExecutor(cost_model)
-    backtest_engine = Engine(
+    backtest_engine = BacktestEngine(
         strategy=strategy,
         data_store=data_store,
-        mode=EngineMode.BACKTEST,
         executor=backtest_executor,
         initial_capital=initial_capital,
     )
 
     # Run Paper mode (using BacktestExecutor for now)
     paper_executor = BacktestExecutor(cost_model)
-    paper_engine = Engine(
+    paper_engine = BacktestEngine(
         strategy=strategy,
         data_store=data_store,
-        mode=EngineMode.PAPER,
         executor=paper_executor,
         initial_capital=initial_capital,
     )
@@ -102,8 +100,8 @@ def test_backtest_paper_parity():
     start = datetime(2023, 1, 20)
     end = datetime(2023, 2, 28)
 
-    backtest_result = backtest_engine.run_backtest(start, end, verbose=False)
-    paper_result = paper_engine.run_backtest(start, end, verbose=False)
+    backtest_result = backtest_engine.run(start, end, verbose=False)
+    paper_result = paper_engine.run(start, end, verbose=False)
 
     # Verify parity
     assert len(backtest_result.snapshots) == len(paper_result.snapshots)
@@ -168,19 +166,17 @@ def test_parity_with_different_schedules():
         )
 
         bt_executor = BacktestExecutor(cost_model)
-        bt_engine = Engine(
+        bt_engine = BacktestEngine(
             strategy=strategy,
             data_store=data_store,
-            mode=EngineMode.BACKTEST,
             executor=bt_executor,
             initial_capital=initial_capital,
         )
 
         p_executor = BacktestExecutor(cost_model)
-        p_engine = Engine(
+        p_engine = BacktestEngine(
             strategy=strategy,
             data_store=data_store,
-            mode=EngineMode.PAPER,
             executor=p_executor,
             initial_capital=initial_capital,
         )
@@ -191,8 +187,8 @@ def test_parity_with_different_schedules():
         bt_engine.reset()
         p_engine.reset()
 
-        bt_result = bt_engine.run_backtest(start, end, verbose=False)
-        p_result = p_engine.run_backtest(start, end, verbose=False)
+        bt_result = bt_engine.run(start, end, verbose=False)
+        p_result = p_engine.run(start, end, verbose=False)
 
         if len(bt_result.snapshots) == 0 or len(p_result.snapshots) == 0:
             continue
@@ -217,19 +213,17 @@ def test_parity_with_costs():
     )
 
     bt_executor = BacktestExecutor(cost_model)
-    bt_engine = Engine(
+    bt_engine = BacktestEngine(
         strategy=strategy,
         data_store=data_store,
-        mode=EngineMode.BACKTEST,
         executor=bt_executor,
         initial_capital=initial_capital,
     )
 
     p_executor = BacktestExecutor(cost_model)
-    p_engine = Engine(
+    p_engine = BacktestEngine(
         strategy=strategy,
         data_store=data_store,
-        mode=EngineMode.PAPER,
         executor=p_executor,
         initial_capital=initial_capital,
     )
@@ -237,8 +231,8 @@ def test_parity_with_costs():
     start = datetime(2023, 1, 20)
     end = datetime(2023, 2, 28)
 
-    bt_result = bt_engine.run_backtest(start, end, verbose=False)
-    p_result = p_engine.run_backtest(start, end, verbose=False)
+    bt_result = bt_engine.run(start, end, verbose=False)
+    p_result = p_engine.run(start, end, verbose=False)
 
     for i, (bt_snap, p_snap) in enumerate(
         zip(bt_result.snapshots, p_result.snapshots)
@@ -281,15 +275,15 @@ def test_parity_edge_cases():
     cost_model = CostModel()
 
     bt_executor = BacktestExecutor(cost_model)
-    bt_engine = Engine(strategy, store, EngineMode.BACKTEST, bt_executor, 1000.0)
+    bt_engine = BacktestEngine(strategy, store, bt_executor, 1000.0)
 
     p_executor = BacktestExecutor(cost_model)
-    p_engine = Engine(strategy, store, EngineMode.PAPER, p_executor, 1000.0)
+    p_engine = BacktestEngine(strategy, store, p_executor, 1000.0)
 
-    bt_result = bt_engine.run_backtest(
+    bt_result = bt_engine.run(
         datetime(2023, 1, 3), datetime(2023, 1, 5), verbose=False
     )
-    p_result = p_engine.run_backtest(
+    p_result = p_engine.run(
         datetime(2023, 1, 3), datetime(2023, 1, 5), verbose=False
     )
 
@@ -310,15 +304,14 @@ def test_deterministic_execution():
 
     def run_backtest():
         executor = BacktestExecutor(cost_model)
-        engine = Engine(
+        engine = BacktestEngine(
             strategy=strategy,
             data_store=data_store,
-            mode=EngineMode.BACKTEST,
             executor=executor,
             initial_capital=10000.0,
         )
 
-        return engine.run_backtest(
+        return engine.run(
             datetime(2023, 1, 20),
             datetime(2023, 2, 15),
             verbose=False,
@@ -391,10 +384,9 @@ def test_backtest_vs_livestore_step_parity():
 
     # Run backtest mode
     backtest_executor = BacktestExecutor(cost_model)
-    backtest_engine = Engine(
+    backtest_engine = BacktestEngine(
         strategy=strategy,
         data_store=backtest_store,
-        mode=EngineMode.BACKTEST,
         executor=backtest_executor,
         initial_capital=initial_capital,
     )
@@ -402,16 +394,16 @@ def test_backtest_vs_livestore_step_parity():
     start = datetime(2023, 1, 20)
     end = datetime(2023, 2, 15)
 
-    backtest_result = backtest_engine.run_backtest(start, end, verbose=False)
+    backtest_result = backtest_engine.run(start, end, verbose=False)
 
     # Run paper mode with step()
     paper_executor = BacktestExecutor(cost_model)
-    paper_engine = Engine(
+    paper_engine = LiveEngine(
         strategy=strategy,
         data_store=live_store,
-        mode=EngineMode.PAPER,
         executor=paper_executor,
         initial_capital=initial_capital,
+        mode=EngineMode.PAPER,
     )
 
     # Simulate step-by-step execution with warmup skip

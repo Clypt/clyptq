@@ -81,7 +81,7 @@ def main():
 
     start = datetime(2023, 2, 1)
     end = datetime(2023, 7, 1)
-    result = engine.run_backtest(start, end, verbose=False)
+    result = engine.run(start, end, verbose=False)
 
     print("\nBacktest Results:")
     print(f"  Total Return: {result.metrics.total_return:.2%}")

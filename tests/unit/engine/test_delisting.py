@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from clyptq.data.store import DataStore
-from clyptq.engine.core import Engine
+from clyptq.engine import Engine
 from clyptq.execution.backtest import BacktestExecutor
 from clyptq.factors.library.momentum import MomentumFactor
 from clyptq.portfolio.construction import TopNConstructor
@@ -63,12 +63,11 @@ def test_delisting_forces_liquidation():
     engine = Engine(
         strategy=strategy,
         data_store=store,
-        mode=EngineMode.BACKTEST,
         executor=executor,
         initial_capital=10000.0,
     )
 
-    result = engine.run_backtest(start, end)
+    result = engine.run(start, end)
 
     # Check that ETH was sold when delisted
     eth_sells = [
@@ -121,12 +120,11 @@ def test_no_liquidation_if_not_delisted():
     engine = Engine(
         strategy=strategy,
         data_store=store,
-        mode=EngineMode.BACKTEST,
         executor=executor,
         initial_capital=10000.0,
     )
 
-    result = engine.run_backtest(start, end)
+    result = engine.run(start, end)
 
     # No forced liquidations, only regular rebalancing
     assert len(result.trades) > 0

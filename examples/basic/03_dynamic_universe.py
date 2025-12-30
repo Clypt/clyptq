@@ -123,7 +123,7 @@ def main():
         print(f"  {dt.strftime('%Y-%m-%d')}: {', '.join(top)}")
     print()
 
-    result = engine.run_backtest(start=start_date, end=end_date, verbose=True)
+    result = engine.run(start=start_date, end=end_date, verbose=True)
 
     # 5. Results
     print_metrics(result.metrics)

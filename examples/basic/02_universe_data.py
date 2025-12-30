@@ -98,7 +98,7 @@ def main():
     start_date = date_range.end - timedelta(days=60)
     end_date = date_range.end
 
-    result = engine.run_backtest(start=start_date, end=end_date, verbose=True)
+    result = engine.run(start=start_date, end=end_date, verbose=True)
 
     # 5. Results
     print_metrics(result.metrics)

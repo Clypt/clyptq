@@ -72,7 +72,6 @@ def test_monte_carlo_basic():
     engine = Engine(
         strategy=strategy,
         data_store=store,
-        mode=EngineMode.BACKTEST,
         executor=executor,
         initial_capital=10000.0,
     )
@@ -80,7 +79,7 @@ def test_monte_carlo_basic():
     # Run backtest
     start = datetime(2023, 1, 20)
     end = datetime(2023, 4, 10)
-    engine.run_backtest(start, end, verbose=False)
+    engine.run(start, end, verbose=False)
 
     # Run Monte Carlo
     mc_result = engine.run_monte_carlo(num_simulations=100, random_seed=42)
@@ -117,21 +116,20 @@ def test_monte_carlo_reproducibility():
     engine = Engine(
         strategy=strategy,
         data_store=store,
-        mode=EngineMode.BACKTEST,
         executor=executor,
         initial_capital=10000.0,
     )
 
     start = datetime(2023, 1, 20)
     end = datetime(2023, 4, 10)
-    engine.run_backtest(start, end, verbose=False)
+    engine.run(start, end, verbose=False)
 
     # Run twice with same seed
     mc1 = engine.run_monte_carlo(num_simulations=50, random_seed=42)
 
     # Reset and run again
     engine.reset()
-    engine.run_backtest(start, end, verbose=False)
+    engine.run(start, end, verbose=False)
     mc2 = engine.run_monte_carlo(num_simulations=50, random_seed=42)
 
     # Results should be identical
@@ -152,7 +150,6 @@ def test_monte_carlo_no_backtest_error():
     engine = Engine(
         strategy=strategy,
         data_store=store,
-        mode=EngineMode.BACKTEST,
         executor=executor,
         initial_capital=10000.0,
     )
@@ -173,14 +170,13 @@ def test_monte_carlo_statistics_properties():
     engine = Engine(
         strategy=strategy,
         data_store=store,
-        mode=EngineMode.BACKTEST,
         executor=executor,
         initial_capital=10000.0,
     )
 
     start = datetime(2023, 1, 20)
     end = datetime(2023, 4, 10)
-    engine.run_backtest(start, end, verbose=False)
+    engine.run(start, end, verbose=False)
 
     mc_result = engine.run_monte_carlo(num_simulations=200, random_seed=42)
 
@@ -210,14 +206,13 @@ def test_monte_carlo_to_dict():
     engine = Engine(
         strategy=strategy,
         data_store=store,
-        mode=EngineMode.BACKTEST,
         executor=executor,
         initial_capital=10000.0,
     )
 
     start = datetime(2023, 1, 20)
     end = datetime(2023, 4, 10)
-    engine.run_backtest(start, end, verbose=False)
+    engine.run(start, end, verbose=False)
 
     mc_result = engine.run_monte_carlo(num_simulations=50, random_seed=42)
 
@@ -250,14 +245,13 @@ def test_simulator_direct_usage():
     engine = Engine(
         strategy=strategy,
         data_store=store,
-        mode=EngineMode.BACKTEST,
         executor=executor,
         initial_capital=10000.0,
     )
 
     start = datetime(2023, 1, 20)
     end = datetime(2023, 4, 10)
-    backtest_result = engine.run_backtest(start, end, verbose=False)
+    backtest_result = engine.run(start, end, verbose=False)
 
     # Use simulator directly
     simulator = MonteCarloSimulator(num_simulations=50, random_seed=42)

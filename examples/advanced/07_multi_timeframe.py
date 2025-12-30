@@ -11,7 +11,7 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
-from clyptq.engine.core import Engine
+from clyptq.engine import Engine
 from clyptq.execution.backtest import BacktestExecutor
 from clyptq.data.mtf_store import MultiTimeframeStore
 from clyptq.factors.library.momentum import MultiTimeframeMomentum
@@ -176,7 +176,7 @@ def main():
     print("Config: 1d(20) + 1w(12), weights 70%/30%, top 10, daily rebal")
 
     print("\n[5/5] Running backtest...")
-    result = engine.run_backtest(start, end, verbose=True)
+    result = engine.run(start, end, verbose=True)
     strategy.factors = original_factors
 
     print("\n" + "=" * 80)
