@@ -59,11 +59,12 @@ clyptq live --strategy MyStrategy --mode paper
 
 ```python
 from clyptq.data.loaders.ccxt import load_crypto_data
-from clyptq.strategy.base import Strategy
+from clyptq.core.base import Strategy
 from clyptq.factors.library.momentum import MomentumFactor
-from clyptq.portfolio.construction import TopNConstructor
-from clyptq.engine import Engine, BacktestExecutor
-from clyptq import Constraints, CostModel, EngineMode
+from clyptq.portfolio.constructors import TopNConstructor
+from clyptq.engine import BacktestEngine
+from clyptq.execution.backtest import BacktestExecutor
+from clyptq import Constraints, CostModel
 from datetime import datetime, timedelta
 
 # Load data
@@ -88,17 +89,16 @@ class MyStrategy(Strategy):
 cost_model = CostModel(maker_fee=0.001, taker_fee=0.001)
 executor = BacktestExecutor(cost_model)
 
-engine = Engine(
+engine = BacktestEngine(
     strategy=MyStrategy(),
     data_store=store,
-    mode=EngineMode.BACKTEST,
     executor=executor,
     initial_capital=10000.0
 )
 
 end = datetime.now()
 start = end - timedelta(days=90)
-result = engine.run_backtest(start, end, verbose=True)
+result = engine.run(start, end, verbose=True)
 
 from clyptq.analytics.metrics import print_metrics
 print_metrics(result.metrics)
@@ -107,9 +107,10 @@ print_metrics(result.metrics)
 ## Paper Trading
 
 ```python
-from clyptq.data.live_store import LiveDataStore
+from clyptq.data.stores.live_store import LiveDataStore
 from clyptq.execution.live import CCXTExecutor
-from clyptq import EngineMode
+from clyptq.engine import LiveEngine
+from clyptq.core.types import EngineMode
 from datetime import datetime
 import time
 
@@ -133,12 +134,12 @@ for symbol in universe:
     store.add_historical(symbol, df)
 
 # Create engine
-engine = Engine(
+engine = LiveEngine(
     strategy=strategy,
     data_store=store,
-    mode=EngineMode.PAPER,
     executor=executor,
     initial_capital=10000.0,
+    mode=EngineMode.PAPER,
 )
 
 # Main loop
@@ -160,21 +161,27 @@ while True:
 
 ```
 clyptq/
-├── core/                 # Core type definitions
-│   ├── __init__.py       # Type exports
-│   └── types.py          # Order, Fill, Position, Constraints, etc.
-├── cli/                  # Command-line tools
-│   ├── main.py           # CLI entry point
-│   └── commands/         # CLI commands
+├── core/                       # Core ABCs & type definitions
+│   ├── base.py                 # Factor, Executor, Strategy, PortfolioConstructor ABC
+│   └── types.py                # Order, Fill, Position, Constraints, etc.
+├── engine/                     # Trading engines
+│   ├── backtest.py             # BacktestEngine
+│   └── live.py                 # LiveEngine (paper/live)
+├── execution/                  # Order execution
+│   ├── backtest.py             # BacktestExecutor
+│   ├── live.py                 # LiveExecutor (CCXT integration)
+│   ├── order_tracker.py        # Order tracking
+│   └── position_sync.py        # Position synchronization
 ├── data/
-│   ├── store.py          # Data storage (backtest)
-│   ├── live_store.py     # Rolling window data (live/paper)
-│   ├── streaming/        # Real-time data
+│   ├── stores/                 # Data storage
+│   │   ├── store.py            # DataStore (backtest)
+│   │   ├── live_store.py       # LiveDataStore (rolling window)
+│   │   └── mtf_store.py        # MultiTimeframeStore
+│   ├── streams/                # Real-time data streaming
 │   └── loaders/
-│       └── ccxt.py       # CCXT loader
+│       └── ccxt.py             # CCXT loader
 ├── factors/
-│   ├── base.py           # Factor base
-│   ├── ops/              # Factor operations
+│   ├── ops/                    # Factor operations
 │   │   ├── time_series.py      # ts_mean, ts_std, correlation
 │   │   └── cross_sectional.py  # rank, normalize, winsorize
 │   └── library/
@@ -182,26 +189,27 @@ clyptq/
 │       ├── volatility.py       # Volatility factors
 │       └── mean_reversion.py   # Mean reversion factors
 ├── portfolio/
-│   ├── construction.py   # TopN, ScoreWeighted, RiskParity, BlendedConstructor
-│   ├── constraints.py    # Position constraints
-│   └── state.py          # Portfolio state
+│   ├── constructors.py         # TopN, ScoreWeighted, RiskParity, BlendedConstructor
+│   ├── constraints.py          # Position constraints
+│   └── state.py                # Portfolio state
+├── strategy/
+│   ├── base.py                 # SimpleStrategy
+│   └── blender.py              # StrategyBlender (multi-strategy)
 ├── optimization/
-│   └── walk_forward.py   # Walk-forward optimization
-├── execution/            # Order execution
-│   ├── base.py           # Base executor
-│   ├── backtest.py       # Backtest executor
-│   ├── live.py           # Live/Paper executor
-│   ├── orders/           # Order tracking
-│   └── positions/        # Position synchronization
-├── risk/                 # Risk management
-│   ├── costs.py          # Trading costs
-│   └── manager.py        # Risk manager
-├── engine/
-│   └── core.py           # Main orchestrator
+│   └── walk_forward.py         # Walk-forward optimization
+├── risk/                       # Risk management
+│   ├── costs.py                # Trading costs
+│   └── manager.py              # Risk manager
 ├── analytics/
-│   └── metrics.py        # Performance metrics
-└── strategy/
-    └── base.py           # Strategy base
+│   ├── metrics.py              # Performance metrics
+│   ├── monte_carlo.py          # Monte Carlo simulation
+│   ├── attribution.py          # Performance attribution
+│   ├── rolling.py              # Rolling metrics
+│   ├── drawdown.py             # Drawdown analysis
+│   └── report.py               # HTML report generation
+└── cli/                        # Command-line tools
+    ├── main.py                 # CLI entry point
+    └── commands/               # CLI commands
 ```
 
 ## Engine Modes
@@ -209,21 +217,21 @@ clyptq/
 **Backtest**: Deterministic execution with historical data, no real money
 
 ```python
-engine = Engine(..., mode=EngineMode.BACKTEST)
+from clyptq.engine import BacktestEngine
+from clyptq.execution.backtest import BacktestExecutor
+
+executor = BacktestExecutor(cost_model)
+engine = BacktestEngine(strategy, data_store, executor, initial_capital)
+result = engine.run(start, end)
 ```
 
 **Paper**: Real-time execution with real market data, no real money
 
 ```python
-engine = Engine(..., mode=EngineMode.PAPER)
-```
-
-**Live**: Real-time execution with real money (use with caution)
-
-```python
+from clyptq.engine import LiveEngine
 from clyptq.execution.live import LiveExecutor
+from clyptq.core.types import EngineMode
 
-# Paper mode (simulated)
 executor = LiveExecutor(
     exchange_id="binance",
     api_key="YOUR_API_KEY",
@@ -231,16 +239,27 @@ executor = LiveExecutor(
     paper_mode=True
 )
 
-# Live mode (real money)
+engine = LiveEngine(strategy, live_store, executor, initial_capital, mode=EngineMode.PAPER)
+result = engine.step(timestamp, prices)
+```
+
+**Live**: Real-time execution with real money (use with caution)
+
+```python
+from clyptq.engine import LiveEngine
+from clyptq.execution.live import LiveExecutor
+from clyptq.core.types import EngineMode
+
 executor = LiveExecutor(
     exchange_id="binance",
     api_key="YOUR_API_KEY",
     api_secret="YOUR_API_SECRET",
     paper_mode=False,
-    sandbox=True
+    sandbox=True  # Use sandbox for testing
 )
 
-engine = Engine(..., mode=EngineMode.LIVE, executor=executor)
+engine = LiveEngine(strategy, live_store, executor, initial_capital, mode=EngineMode.LIVE)
+result = engine.step(timestamp, prices)
 ```
 
 ## Testing
