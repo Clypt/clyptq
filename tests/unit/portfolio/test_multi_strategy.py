@@ -7,7 +7,8 @@ import pandas as pd
 import pytest
 from datetime import datetime, timedelta
 
-from clyptq.strategy.base import StrategyBlender, SimpleStrategy
+from clyptq.strategy.base import SimpleStrategy
+from clyptq.strategy.blender import StrategyBlender
 from clyptq.factors.library.momentum import MomentumFactor
 from clyptq.factors.library.mean_reversion import ZScoreFactor
 from clyptq.portfolio.construction import TopNConstructor, ScoreWeightedConstructor
