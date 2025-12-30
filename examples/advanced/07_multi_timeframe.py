@@ -14,10 +14,10 @@ from pathlib import Path
 from clyptq.engine.core import Engine
 from clyptq.execution.backtest import BacktestExecutor
 from clyptq.data.mtf_store import MultiTimeframeStore
-from clyptq.factors.mtf_factor import MultiTimeframeMomentum
-from clyptq.factors.base import Factor
+from clyptq.factors.library.momentum import MultiTimeframeMomentum
+from clyptq.core.base import Factor
 from clyptq.portfolio.construction import TopNConstructor
-from clyptq.strategy.base import Strategy
+from clyptq.core.base import Strategy
 from clyptq.core.types import EngineMode, Constraints, CostModel
 
 

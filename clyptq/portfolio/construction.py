@@ -1,38 +1,13 @@
 """
 Portfolio construction strategies.
-
-Transforms factor scores into target portfolio weights using different methods:
-- TopN: Equal weight top N ranked assets
-- ScoreWeighted: Weight proportional to scores
-- RiskParity: Weight inversely proportional to volatility
 """
 
-from abc import ABC, abstractmethod
 from typing import Dict
 
 import numpy as np
 
+from clyptq.core.base import PortfolioConstructor
 from clyptq.core.types import Constraints
-
-
-class PortfolioConstructor(ABC):
-    """Abstract base class for portfolio construction."""
-
-    @abstractmethod
-    def construct(
-        self, scores: Dict[str, float], constraints: Constraints
-    ) -> Dict[str, float]:
-        """
-        Construct target portfolio from factor scores.
-
-        Args:
-            scores: Dictionary of {symbol: score}
-            constraints: Portfolio constraints
-
-        Returns:
-            Dictionary of {symbol: weight} where sum(weights) <= max_gross_exposure
-        """
-        pass
 
 
 class TopNConstructor(PortfolioConstructor):

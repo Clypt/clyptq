@@ -15,7 +15,7 @@ from pathlib import Path
 from clyptq.engine.core import Engine
 from clyptq.execution.backtest import BacktestExecutor
 from clyptq.data.store import DataStore
-from clyptq.factors.base import Factor
+from clyptq.core.base import Factor
 from clyptq.factors.ops.time_series import ts_mean, ts_std, ts_rank, correlation
 from clyptq.factors.ops.cross_sectional import rank
 from clyptq.portfolio.construction import TopNConstructor

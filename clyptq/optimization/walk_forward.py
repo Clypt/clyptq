@@ -14,7 +14,7 @@ import pandas as pd
 from clyptq.data.store import DataStore
 from clyptq.engine.core import Engine
 from clyptq.execution.backtest import BacktestExecutor
-from clyptq.strategy.base import Strategy
+from clyptq.core.base import Strategy
 from clyptq.core.types import BacktestResult, CostModel, EngineMode
 
 

@@ -13,7 +13,7 @@ from clyptq.execution.backtest import BacktestExecutor
 from clyptq.data.store import DataStore
 from clyptq.factors.library.momentum import MomentumFactor
 from clyptq.portfolio.construction import TopNConstructor
-from clyptq.strategy.base import Strategy
+from clyptq.core.base import Strategy
 from clyptq.core.types import EngineMode, Constraints, CostModel
 from clyptq.analytics.report import HTMLReportGenerator
 

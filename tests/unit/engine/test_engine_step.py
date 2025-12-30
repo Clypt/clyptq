@@ -12,7 +12,7 @@ from clyptq.factors.library.momentum import MomentumFactor
 from clyptq.portfolio.construction import TopNConstructor
 from clyptq.portfolio.constraints import Constraints
 from clyptq.risk.costs import CostModel
-from clyptq.strategy.base import Strategy
+from clyptq.core.base import Strategy
 
 
 class SimpleStrategy(Strategy):

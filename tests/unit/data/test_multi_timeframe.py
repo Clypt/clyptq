@@ -5,8 +5,9 @@ from datetime import datetime, timedelta
 import pandas as pd
 import pytest
 
+from clyptq.core.base import MultiTimeframeFactor
 from clyptq.data.mtf_store import MultiTimeframeStore
-from clyptq.factors.mtf_factor import MultiTimeframeFactor, MultiTimeframeMomentum
+from clyptq.factors.library.momentum import MultiTimeframeMomentum
 
 
 def create_test_data() -> MultiTimeframeStore:

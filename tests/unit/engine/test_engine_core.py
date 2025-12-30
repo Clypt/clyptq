@@ -13,7 +13,7 @@ from clyptq import Constraints, CostModel, EngineMode
 from clyptq.data.store import DataStore
 from clyptq.engine.core import Engine
 from clyptq.execution import BacktestExecutor
-from clyptq.factors.base import Factor
+from clyptq.core.base import Factor
 from clyptq.portfolio.construction import TopNConstructor
 from clyptq.strategy.base import SimpleStrategy
 from typing import Dict

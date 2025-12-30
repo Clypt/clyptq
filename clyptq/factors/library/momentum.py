@@ -2,13 +2,15 @@
 Momentum-based alpha factors.
 """
 
-from typing import Dict
+from datetime import datetime
+from typing import Dict, List, Optional
 
 import numpy as np
+import pandas as pd
 
+from clyptq.core.base import Factor, MultiTimeframeFactor
 from clyptq.data.store import DataView
-from clyptq.factors.base import Factor
-from clyptq.factors.ops import delay, delta, ts_mean, ts_std
+from clyptq.factors.ops import delay, delta
 
 
 class MomentumFactor(Factor):
@@ -63,3 +65,53 @@ class TrendStrengthFactor(Factor):
             for s in data.symbols
             if len(p := data.close(s, self.lookback)) == self.lookback
         }
+
+
+class MultiTimeframeMomentum(MultiTimeframeFactor):
+    """Multi-timeframe momentum factor."""
+
+    def __init__(
+        self,
+        timeframes: List[str] = ["1d", "1w"],
+        lookbacks: Optional[Dict[str, int]] = None,
+        weights: Optional[Dict[str, float]] = None,
+    ):
+        super().__init__(timeframes, lookbacks)
+
+        if weights is None:
+            weight = 1.0 / len(timeframes)
+            self.weights = {tf: weight for tf in timeframes}
+        else:
+            self.weights = weights
+
+        weight_sum = sum(self.weights.values())
+        if abs(weight_sum - 1.0) > 1e-6:
+            raise ValueError(f"Weights must sum to 1.0, got {weight_sum}")
+
+    def compute_mtf(
+        self,
+        symbol: str,
+        timeframe_data: Dict[str, pd.DataFrame],
+        timestamp: datetime,
+    ) -> Optional[float]:
+        """Compute weighted momentum across timeframes."""
+        momentum_scores = {}
+
+        for tf, data in timeframe_data.items():
+            if len(data) < 2:
+                return None
+
+            first_price = data.iloc[0]["close"]
+            last_price = data.iloc[-1]["close"]
+
+            if first_price <= 0:
+                return None
+
+            momentum = (last_price - first_price) / first_price
+            momentum_scores[tf] = momentum
+
+        combined = sum(
+            momentum_scores[tf] * self.weights[tf] for tf in self.timeframes
+        )
+
+        return combined
