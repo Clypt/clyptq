@@ -6,7 +6,7 @@ from datetime import datetime
 
 from clyptq import EngineMode
 from clyptq.cli.commands.backtest import load_strategy_from_file
-from clyptq.data.live_store import LiveDataStore
+from clyptq.data.stores.live_store import LiveDataStore
 from clyptq.engine import Engine
 from clyptq.execution.live import CCXTExecutor
 from clyptq.risk import CostModel

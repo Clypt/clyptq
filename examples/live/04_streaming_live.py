@@ -7,11 +7,11 @@ Demonstrates async streaming for minimal latency.
 import asyncio
 import os
 
-from clyptq.data.streaming.ccxt_stream import CCXTStreamingSource
+from clyptq.data.streams.ccxt_stream import CCXTStreamingSource
 from clyptq.engine import Engine
 from clyptq.execution.live import LiveExecutor
 from clyptq.factors.library.momentum import MomentumFactor
-from clyptq.portfolio.construction import TopNConstructor
+from clyptq.portfolio.constructors import TopNConstructor
 from clyptq.portfolio.constraints import Constraints
 from clyptq.risk.costs import CostModel
 from clyptq.risk.manager import RiskManager

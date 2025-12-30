@@ -9,8 +9,8 @@ import pandas as pd
 from clyptq.core.types import Constraints, Fill, Order
 
 if TYPE_CHECKING:
-    from clyptq.data.store import DataView
-    from clyptq.data.mtf_store import MultiTimeframeStore
+    from clyptq.data.stores.store import DataView
+    from clyptq.data.stores.mtf_store import MultiTimeframeStore
 
 
 class Factor(ABC):
@@ -37,7 +37,7 @@ class MultiTimeframeFactor(ABC):
         lookbacks: Optional[Dict[str, int]] = None,
         name: Optional[str] = None,
     ):
-        from clyptq.data.mtf_store import MultiTimeframeStore
+        from clyptq.data.stores.mtf_store import MultiTimeframeStore
 
         self.timeframes = timeframes
         self.lookbacks = lookbacks or {tf: 20 for tf in timeframes}

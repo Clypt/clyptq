@@ -11,7 +11,7 @@ import ccxt
 
 from clyptq.risk.costs import apply_slippage, calculate_fee
 from clyptq.core.base import Executor
-from clyptq.execution.orders.tracker import OrderTracker, TrackedOrder
+from clyptq.execution.order_tracker import OrderTracker, TrackedOrder
 from clyptq.core.types import CostModel, Fill, FillStatus, Order, OrderSide
 
 

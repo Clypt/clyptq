@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import pytest
 
-from clyptq.data.live_store import LiveDataStore
+from clyptq.data.stores.live_store import LiveDataStore
 
 
 def test_add_historical():

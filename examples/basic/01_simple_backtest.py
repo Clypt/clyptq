@@ -19,7 +19,7 @@ from clyptq.data.loaders.ccxt import load_crypto_data
 from clyptq.engine import BacktestExecutor, Engine
 from clyptq.factors.library.momentum import MomentumFactor
 from clyptq.factors.library.volatility import VolatilityFactor
-from clyptq.portfolio.construction import TopNConstructor
+from clyptq.portfolio.constructors import TopNConstructor
 from clyptq.strategy.base import SimpleStrategy
 
 

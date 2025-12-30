@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from clyptq.core.base import MultiTimeframeFactor
-from clyptq.data.mtf_store import MultiTimeframeStore
+from clyptq.data.stores.mtf_store import MultiTimeframeStore
 from clyptq.factors.library.momentum import MultiTimeframeMomentum
 
 

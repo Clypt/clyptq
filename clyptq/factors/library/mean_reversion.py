@@ -6,7 +6,7 @@ from typing import Dict
 
 import numpy as np
 
-from clyptq.data.store import DataView
+from clyptq.data.stores.store import DataView
 from clyptq.core.base import Factor
 from clyptq.factors.ops import ts_mean, ts_rank, ts_std
 

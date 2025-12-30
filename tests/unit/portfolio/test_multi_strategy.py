@@ -11,9 +11,9 @@ from clyptq.strategy.base import SimpleStrategy
 from clyptq.strategy.blender import StrategyBlender
 from clyptq.factors.library.momentum import MomentumFactor
 from clyptq.factors.library.mean_reversion import ZScoreFactor
-from clyptq.portfolio.construction import TopNConstructor, ScoreWeightedConstructor
+from clyptq.portfolio.constructors import TopNConstructor, ScoreWeightedConstructor
 from clyptq.core.types import Constraints
-from clyptq.data.store import DataStore
+from clyptq.data.stores.store import DataStore
 
 
 def test_strategy_blender_init():
@@ -203,7 +203,7 @@ def test_strategy_blender_warmup():
 
 def test_blended_constructor_weight_blending():
     """Test BlendedConstructor blends weights correctly."""
-    from clyptq.portfolio.construction import BlendedConstructor
+    from clyptq.portfolio.constructors import BlendedConstructor
 
     momentum_strategy = SimpleStrategy(
         factors_list=[MomentumFactor(lookback=20)],

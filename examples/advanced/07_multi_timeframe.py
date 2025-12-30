@@ -16,7 +16,7 @@ from clyptq.execution.backtest import BacktestExecutor
 from clyptq.data.mtf_store import MultiTimeframeStore
 from clyptq.factors.library.momentum import MultiTimeframeMomentum
 from clyptq.core.base import Factor
-from clyptq.portfolio.construction import TopNConstructor
+from clyptq.portfolio.constructors import TopNConstructor
 from clyptq.core.base import Strategy
 from clyptq.core.types import EngineMode, Constraints, CostModel
 

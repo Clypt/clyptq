@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from clyptq.data.store import DataStore
+from clyptq.data.stores.store import DataStore
 from clyptq.engine import Engine
 from clyptq.execution.backtest import BacktestExecutor
 from clyptq.core.base import Strategy

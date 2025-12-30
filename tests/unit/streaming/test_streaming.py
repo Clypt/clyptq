@@ -6,7 +6,7 @@ from datetime import datetime
 
 import pytest
 
-from clyptq.data.streaming.ccxt_stream import CCXTStreamingSource
+from clyptq.data.streams.ccxt_stream import CCXTStreamingSource
 
 
 @pytest.mark.skipif(os.getenv("GITHUB_ACTIONS") == "true", reason="Binance API geo-restricted in CI")

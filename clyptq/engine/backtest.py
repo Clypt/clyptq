@@ -8,7 +8,7 @@ import pandas as pd
 from clyptq.analytics.metrics import compute_metrics
 from clyptq.core.base import Executor, Factor, PortfolioConstructor, Strategy
 from clyptq.core.types import BacktestResult, EngineMode, Fill, Order, OrderSide, Snapshot
-from clyptq.data.store import DataStore
+from clyptq.data.stores.store import DataStore
 from clyptq.portfolio.state import PortfolioState
 from clyptq.risk.manager import RiskManager
 

@@ -10,11 +10,11 @@ import pandas as pd
 import pytest
 
 from clyptq import Constraints, CostModel, EngineMode
-from clyptq.data.store import DataStore
+from clyptq.data.stores.store import DataStore
 from clyptq.engine import Engine
 from clyptq.execution import BacktestExecutor
 from clyptq.core.base import Factor
-from clyptq.portfolio.construction import TopNConstructor
+from clyptq.portfolio.constructors import TopNConstructor
 from clyptq.strategy.base import SimpleStrategy
 from typing import Dict
 

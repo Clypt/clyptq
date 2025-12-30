@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from clyptq.core.base import Factor, MultiTimeframeFactor
-from clyptq.data.store import DataView
+from clyptq.data.stores.store import DataView
 from clyptq.factors.ops import delay, delta
 
 

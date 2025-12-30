@@ -20,12 +20,12 @@ import pandas as pd
 
 from clyptq import Constraints, CostModel, EngineMode
 from clyptq.analytics.metrics import print_metrics
-from clyptq.data.store import DataStore
+from clyptq.data.stores.store import DataStore
 from clyptq.engine import Engine
 from clyptq.execution import BacktestExecutor
 from clyptq.factors.library.momentum import MomentumFactor
 from clyptq.factors.library.volatility import VolatilityFactor
-from clyptq.portfolio.construction import TopNConstructor
+from clyptq.portfolio.constructors import TopNConstructor
 from clyptq.strategy.base import SimpleStrategy
 
 

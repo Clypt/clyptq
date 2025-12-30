@@ -5,11 +5,11 @@ from datetime import datetime, timedelta
 import pandas as pd
 import pytest
 
-from clyptq.data.store import DataStore
+from clyptq.data.stores.store import DataStore
 from clyptq.engine import Engine
 from clyptq.execution.backtest import BacktestExecutor
 from clyptq.factors.library.momentum import MomentumFactor
-from clyptq.portfolio.construction import TopNConstructor
+from clyptq.portfolio.constructors import TopNConstructor
 from clyptq.portfolio.constraints import Constraints
 from clyptq.strategy.base import SimpleStrategy
 from clyptq.core.types import CostModel, EngineMode

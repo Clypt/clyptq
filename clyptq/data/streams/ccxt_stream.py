@@ -7,7 +7,7 @@ from typing import Callable, Dict, List, Optional
 import aiohttp
 import ccxt.async_support as ccxt
 
-from clyptq.data.streaming.base import StreamingDataSource
+from clyptq.data.streams.base import StreamingDataSource
 
 
 class CCXTStreamingSource(StreamingDataSource):

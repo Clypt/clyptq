@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 from datetime import datetime, timedelta
 
-from clyptq.data.store import DataStore
+from clyptq.data.stores.store import DataStore
 from clyptq.factors.library.mean_reversion import (
     BollingerFactor,
     PercentileFactor,

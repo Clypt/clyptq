@@ -5,7 +5,7 @@ from typing import Dict, List
 
 import pandas as pd
 
-from clyptq.data.store import DataView
+from clyptq.data.stores.store import DataView
 
 
 class LiveDataStore:

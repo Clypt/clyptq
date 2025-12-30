@@ -58,7 +58,7 @@ class StrategyBlender(Strategy):
 
     def portfolio_constructor(self) -> PortfolioConstructor:
         """Get blended constructor."""
-        from clyptq.portfolio.construction import BlendedConstructor
+        from clyptq.portfolio.constructors import BlendedConstructor
 
         return BlendedConstructor(self.strategies, self.allocations, self._factor_map)
 

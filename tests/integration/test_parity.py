@@ -6,12 +6,12 @@ import pandas as pd
 import pytest
 
 from clyptq import Constraints, CostModel, EngineMode
-from clyptq.data.live_store import LiveDataStore
-from clyptq.data.store import DataStore
+from clyptq.data.stores.live_store import LiveDataStore
+from clyptq.data.stores.store import DataStore
 from clyptq.engine import BacktestEngine, LiveEngine
 from clyptq.execution import BacktestExecutor
 from clyptq.factors.library.momentum import MomentumFactor
-from clyptq.portfolio.construction import TopNConstructor
+from clyptq.portfolio.constructors import TopNConstructor
 from clyptq.strategy.base import SimpleStrategy
 
 

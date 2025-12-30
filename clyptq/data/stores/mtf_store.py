@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
-from clyptq.data.store import DataStore
+from clyptq.data.stores.store import DataStore
 
 
 class MultiTimeframeStore:

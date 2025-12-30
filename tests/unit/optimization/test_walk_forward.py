@@ -10,9 +10,9 @@ from datetime import datetime, timedelta
 from clyptq.optimization.walk_forward import WalkForwardOptimizer
 from clyptq.strategy.base import SimpleStrategy
 from clyptq.factors.library.momentum import MomentumFactor
-from clyptq.portfolio.construction import TopNConstructor
+from clyptq.portfolio.constructors import TopNConstructor
 from clyptq.core.types import Constraints
-from clyptq.data.store import DataStore
+from clyptq.data.stores.store import DataStore
 
 
 def create_test_datastore(symbols, days=365):
