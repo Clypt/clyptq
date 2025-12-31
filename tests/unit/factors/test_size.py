@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 
 from clyptq.data.stores.store import DataStore
-from clyptq.factors.library.size import DollarVolumeSizeFactor
+from clyptq.trading.factors.library.size import DollarVolumeSizeFactor
 
 
 def create_test_store():

@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta, timezone
 
-from clyptq.execution.order_tracker import OrderStatus, OrderTracker, TrackedOrder
+from clyptq.trading.execution.order_tracker import OrderStatus, OrderTracker, TrackedOrder
 from clyptq.core.types import Fill, FillStatus, Order, OrderSide
 
 

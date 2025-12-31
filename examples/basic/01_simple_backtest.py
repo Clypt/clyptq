@@ -16,11 +16,11 @@ from datetime import datetime, timedelta
 from clyptq import Constraints, CostModel, EngineMode
 from clyptq.analytics.metrics import print_metrics
 from clyptq.data.loaders.ccxt import load_crypto_data
-from clyptq.engine import BacktestExecutor, Engine
-from clyptq.factors.library.momentum import MomentumFactor
-from clyptq.factors.library.volatility import VolatilityFactor
-from clyptq.portfolio.constructors import TopNConstructor
-from clyptq.strategy.base import SimpleStrategy
+from clyptq.trading.engine import BacktestExecutor, Engine
+from clyptq.trading.factors.library.momentum import MomentumFactor
+from clyptq.trading.factors.library.volatility import VolatilityFactor
+from clyptq.trading.portfolio.constructors import TopNConstructor
+from clyptq.trading.strategy.base import SimpleStrategy
 
 
 class MomentumStrategy(SimpleStrategy):

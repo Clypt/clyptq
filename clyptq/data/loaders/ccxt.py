@@ -11,6 +11,7 @@ import ccxt
 import pandas as pd
 
 from clyptq.data.stores.store import DataStore
+from clyptq.infra.utils import get_logger
 
 
 class CCXTLoader:
@@ -28,6 +29,9 @@ class CCXTLoader:
             exchange_id: Exchange identifier (e.g., 'binance', 'coinbase')
             sandbox: Use sandbox/testnet mode
         """
+        self.exchange_id = exchange_id
+        self.logger = get_logger(__name__, context={"exchange": exchange_id, "sandbox": sandbox})
+
         exchange_class = getattr(ccxt, exchange_id)
         self.exchange = exchange_class(
             {
@@ -36,8 +40,15 @@ class CCXTLoader:
             }
         )
 
-        self.exchange_id = exchange_id
-        self.exchange.load_markets()
+        try:
+            self.exchange.load_markets()
+            self.logger.info("Exchange markets loaded", extra={"market_count": len(self.exchange.markets)})
+        except ccxt.NetworkError as e:
+            self.logger.error("Network error loading markets", extra={"error": str(e)})
+            raise
+        except ccxt.ExchangeError as e:
+            self.logger.error("Exchange error loading markets", extra={"error": str(e)})
+            raise
 
     def load_ohlcv(
         self,
@@ -69,39 +80,43 @@ class CCXTLoader:
         if since:
             since_ms = int(since.timestamp() * 1000)
 
-        # Fetch data in batches until we get all available data
-        while True:
-            ohlcv = self.exchange.fetch_ohlcv(
-                symbol=symbol, timeframe=timeframe, since=since_ms, limit=fetch_limit
-            )
+        try:
+            while True:
+                ohlcv = self.exchange.fetch_ohlcv(
+                    symbol=symbol, timeframe=timeframe, since=since_ms, limit=fetch_limit
+                )
 
-            if not ohlcv:
-                break
+                if not ohlcv:
+                    break
 
-            all_ohlcv.extend(ohlcv)
+                all_ohlcv.extend(ohlcv)
 
-            # If we got less than the limit, we're done
-            if len(ohlcv) < fetch_limit:
-                break
+                if len(ohlcv) < fetch_limit:
+                    break
 
-            # Update since to the last timestamp + 1ms
-            since_ms = ohlcv[-1][0] + 1
+                since_ms = ohlcv[-1][0] + 1
+
+        except ccxt.NetworkError as e:
+            self.logger.error("Network error fetching OHLCV", extra={"symbol": symbol, "timeframe": timeframe, "error": str(e)})
+            raise
+        except ccxt.ExchangeError as e:
+            self.logger.error("Exchange error fetching OHLCV", extra={"symbol": symbol, "timeframe": timeframe, "error": str(e)})
+            raise
 
         if not all_ohlcv:
+            self.logger.warning("No data returned for symbol", extra={"symbol": symbol, "timeframe": timeframe})
             raise ValueError(f"No data returned for {symbol}")
 
-        # Convert to DataFrame
         df = pd.DataFrame(
             all_ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
         )
 
-        # Remove duplicates (can happen at batch boundaries)
         df.drop_duplicates(subset=["timestamp"], keep="first", inplace=True)
 
-        # Convert timestamp to datetime
         df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
         df.set_index("timestamp", inplace=True)
 
+        self.logger.info("OHLCV data loaded", extra={"symbol": symbol, "timeframe": timeframe, "bars": len(df)})
         return df
 
     def load_multiple(
@@ -129,10 +144,19 @@ class CCXTLoader:
             try:
                 df = self.load_ohlcv(symbol, timeframe, since, limit)
                 store.add_ohlcv(symbol, df, frequency=timeframe, source=self.exchange_id)
-                print(f"Loaded {symbol}: {len(df)} bars")
+                self.logger.info("Symbol loaded successfully", extra={"symbol": symbol, "bars": len(df)})
 
+            except ccxt.NetworkError as e:
+                self.logger.error("Network error loading symbol", extra={"symbol": symbol, "error": str(e)})
+                continue
+            except ccxt.ExchangeError as e:
+                self.logger.warning("Exchange error loading symbol", extra={"symbol": symbol, "error": str(e)})
+                continue
+            except ValueError as e:
+                self.logger.warning("No data for symbol", extra={"symbol": symbol, "error": str(e)})
+                continue
             except Exception as e:
-                print(f"Failed to load {symbol}: {e}")
+                self.logger.error("Unexpected error loading symbol", extra={"symbol": symbol, "error": str(e)})
                 continue
 
         return store

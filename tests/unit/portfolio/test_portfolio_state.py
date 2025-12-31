@@ -9,7 +9,7 @@ from datetime import datetime
 
 import pytest
 
-from clyptq.portfolio.state import PortfolioState
+from clyptq.trading.portfolio.state import PortfolioState
 from clyptq.core.types import Fill, OrderSide, FillStatus
 
 

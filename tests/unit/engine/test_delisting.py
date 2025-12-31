@@ -6,12 +6,12 @@ import pandas as pd
 import pytest
 
 from clyptq.data.stores.store import DataStore
-from clyptq.engine import Engine
-from clyptq.execution.backtest import BacktestExecutor
-from clyptq.factors.library.momentum import MomentumFactor
-from clyptq.portfolio.constructors import TopNConstructor
-from clyptq.portfolio.constraints import Constraints
-from clyptq.strategy.base import SimpleStrategy
+from clyptq.trading.engine import Engine
+from clyptq.trading.execution.backtest import BacktestExecutor
+from clyptq.trading.factors.library.momentum import MomentumFactor
+from clyptq.trading.portfolio.constructors import TopNConstructor
+from clyptq.trading.portfolio.constraints import Constraints
+from clyptq.trading.strategy.base import SimpleStrategy
 from clyptq.core.types import CostModel, EngineMode
 
 

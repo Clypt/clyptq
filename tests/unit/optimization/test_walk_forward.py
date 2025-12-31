@@ -7,10 +7,10 @@ import pandas as pd
 import pytest
 from datetime import datetime, timedelta
 
-from clyptq.optimization.walk_forward import WalkForwardOptimizer
-from clyptq.strategy.base import SimpleStrategy
-from clyptq.factors.library.momentum import MomentumFactor
-from clyptq.portfolio.constructors import TopNConstructor
+from clyptq.trading.optimization.walk_forward import WalkForwardOptimizer
+from clyptq.trading.strategy.base import SimpleStrategy
+from clyptq.trading.factors.library.momentum import MomentumFactor
+from clyptq.trading.portfolio.constructors import TopNConstructor
 from clyptq.core.types import Constraints
 from clyptq.data.stores.store import DataStore
 

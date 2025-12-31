@@ -19,12 +19,12 @@ from datetime import datetime
 
 from clyptq import Constraints, CostModel, EngineMode
 from clyptq.data.stores.live_store import LiveDataStore
-from clyptq.engine import Engine
-from clyptq.execution.live import CCXTExecutor
-from clyptq.factors.library.momentum import MomentumFactor
-from clyptq.factors.library.volatility import VolatilityFactor
-from clyptq.portfolio.constructors import TopNConstructor
-from clyptq.strategy.base import SimpleStrategy
+from clyptq.trading.engine import Engine
+from clyptq.trading.execution.live import CCXTExecutor
+from clyptq.trading.factors.library.momentum import MomentumFactor
+from clyptq.trading.factors.library.volatility import VolatilityFactor
+from clyptq.trading.portfolio.constructors import TopNConstructor
+from clyptq.trading.strategy.base import SimpleStrategy
 
 
 class MomentumStrategy(SimpleStrategy):

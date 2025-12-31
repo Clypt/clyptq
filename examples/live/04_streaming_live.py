@@ -8,14 +8,14 @@ import asyncio
 import os
 
 from clyptq.data.streams.ccxt_stream import CCXTStreamingSource
-from clyptq.engine import Engine
-from clyptq.execution.live import LiveExecutor
-from clyptq.factors.library.momentum import MomentumFactor
-from clyptq.portfolio.constructors import TopNConstructor
-from clyptq.portfolio.constraints import Constraints
-from clyptq.risk.costs import CostModel
-from clyptq.risk.manager import RiskManager
-from clyptq.strategy.base import SimpleStrategy
+from clyptq.trading.engine import Engine
+from clyptq.trading.execution.live import LiveExecutor
+from clyptq.trading.factors.library.momentum import MomentumFactor
+from clyptq.trading.portfolio.constructors import TopNConstructor
+from clyptq.trading.portfolio.constraints import Constraints
+from clyptq.trading.risk.costs import CostModel
+from clyptq.trading.risk.manager import RiskManager
+from clyptq.trading.strategy.base import SimpleStrategy
 from clyptq.core.types import EngineMode
 
 
