@@ -47,9 +47,13 @@ class LiveDataStore:
         """Update with new prices (creates daily bar).
 
         Args:
-            timestamp: Current timestamp
+            timestamp: Current timestamp (timezone-aware or naive)
             prices: {symbol: price}
         """
+        # Convert to naive if needed for consistent comparison
+        if timestamp.tzinfo is not None:
+            timestamp = timestamp.replace(tzinfo=None)
+
         cutoff = timestamp - timedelta(days=self.lookback_days - 1)
 
         for symbol, price in prices.items():
