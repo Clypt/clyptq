@@ -8,20 +8,35 @@ Quantitative trading system for cryptocurrency markets featuring alpha factor co
 
 ## Features
 
+### Core Trading System
 - Alpha factor framework with 15+ production-ready factors
 - Multiple portfolio construction strategies (Top-N, Score-Weighted, Risk Parity, Blended)
 - Event-driven backtesting engine with look-ahead bias prevention
 - Paper/Live trading with real-time factor-based execution
 - Multi-timeframe support (1h, 4h, 1d, 1w) with automatic alignment
-- Monte Carlo simulation with confidence intervals and risk metrics
-- Performance attribution (factor/asset contribution, cost breakdown)
-- Rolling metrics (Sharpe, Sortino, volatility, drawdown)
-- HTML report generation with equity curves and analytics
-- CCXT integration for 100+ cryptocurrency exchanges
 - Walk-forward optimization for parameter tuning
 - Multi-strategy blending with flexible allocation
 - Cash constraint enforcement and overselling prevention
 - Deterministic backtests for reproducibility
+
+### Analytics & Reporting
+- Monte Carlo simulation with confidence intervals and risk metrics
+- Performance attribution (factor/asset contribution, cost breakdown)
+- Rolling metrics (Sharpe, Sortino, volatility, drawdown)
+- HTML report generation with equity curves and analytics
+- Comprehensive drawdown analysis (duration, recovery, underwater periods)
+
+### Infrastructure (v0.6.0)
+- 5 domain groups architecture (core, infra, data, trading, analytics)
+- SaaS-ready infrastructure (health monitoring, multi-tenancy, export utilities)
+- Research tools (data exploration, factor analyzer, strategy backtester)
+- Comprehensive testing suite (192 tests: load, integration, security)
+- Security audit tools (credential safety, secrets management, PII redaction)
+
+### Integrations
+- CCXT integration for 100+ cryptocurrency exchanges
+- 61.69% test coverage with 192 passing tests
+- Production-ready code quality and maintainability
 
 ## Installation
 
@@ -65,10 +80,10 @@ clyptq live --strategy MyStrategy --mode paper
 ```python
 from clyptq.data.loaders.ccxt import load_crypto_data
 from clyptq.core.base import Strategy
-from clyptq.factors.library.momentum import MomentumFactor
-from clyptq.portfolio.constructors import TopNConstructor
-from clyptq.engine import BacktestEngine
-from clyptq.execution.backtest import BacktestExecutor
+from clyptq.trading.factors.library.momentum import MomentumFactor
+from clyptq.trading.portfolio.constructors import TopNConstructor
+from clyptq.trading.engine import BacktestEngine
+from clyptq.trading.execution.backtest import BacktestExecutor
 from clyptq import Constraints, CostModel
 from datetime import datetime, timedelta
 
@@ -113,8 +128,8 @@ print_metrics(result.metrics)
 
 ```python
 from clyptq.data.stores.live_store import LiveDataStore
-from clyptq.execution.live import CCXTExecutor
-from clyptq.engine import LiveEngine
+from clyptq.trading.execution.live import LiveExecutor
+from clyptq.trading.engine import LiveEngine
 from clyptq.core.types import EngineMode
 from datetime import datetime
 import time
@@ -124,12 +139,11 @@ strategy = MyStrategy()
 universe = ["BTC/USDT", "ETH/USDT", "BNB/USDT"]
 
 cost_model = CostModel(maker_fee=0.001, taker_fee=0.001, slippage_bps=5.0)
-executor = CCXTExecutor(
+executor = LiveExecutor(
     exchange_id="binance",
     api_key="YOUR_KEY",
     api_secret="YOUR_SECRET",
     paper_mode=True,
-    cost_model=cost_model,
 )
 
 # Fetch historical for warmup
@@ -162,22 +176,23 @@ while True:
     time.sleep(60)
 ```
 
-## Architecture
+## Architecture (v0.6.0 - 5 Domain Groups)
+
+**Design**: 15 folders → 5 domain groups for clear separation of concerns
 
 ```
 clyptq/
 ├── core/                       # Core ABCs & type definitions
 │   ├── base.py                 # Factor, Executor, Strategy, PortfolioConstructor ABC
 │   └── types.py                # Order, Fill, Position, Constraints, etc.
-├── engine/                     # Trading engines
-│   ├── backtest.py             # BacktestEngine
-│   └── live.py                 # LiveEngine (paper/live)
-├── execution/                  # Order execution
-│   ├── backtest.py             # BacktestExecutor
-│   ├── live.py                 # LiveExecutor (CCXT integration)
-│   ├── order_tracker.py        # Order tracking
-│   └── position_sync.py        # Position synchronization
-├── data/
+│
+├── infra/                      # Infrastructure & utilities
+│   ├── health/                 # Health monitoring (SaaS)
+│   ├── security/               # Security & secrets management
+│   ├── utils/                  # Utilities & logging
+│   └── cli/                    # CLI interface
+│
+├── data/                       # Data management
 │   ├── stores/                 # Data storage
 │   │   ├── store.py            # DataStore (backtest)
 │   │   ├── live_store.py       # LiveDataStore (rolling window)
@@ -185,40 +200,48 @@ clyptq/
 │   ├── streams/                # Real-time data streaming
 │   └── loaders/
 │       └── ccxt.py             # CCXT loader
-├── factors/
-│   ├── ops/                    # Factor operations
-│   │   ├── time_series.py      # ts_mean, ts_std, correlation
-│   │   └── cross_sectional.py  # rank, normalize, winsorize
-│   ├── mtf_factor.py           # MultiTimeframeFactor base
-│   └── library/
-│       ├── momentum.py         # Momentum, MultiTimeframeMomentum
-│       ├── volatility.py       # Volatility factors
-│       ├── mean_reversion.py   # Bollinger, ZScore, Percentile
-│       ├── volume.py           # Volume, VolumeRatio, DollarVolume
-│       ├── liquidity.py        # Amihud, EffectiveSpread, VolOfVol
-│       └── size.py             # DollarVolumeSize
-├── portfolio/
-│   ├── constructors.py         # TopN, ScoreWeighted, RiskParity, BlendedConstructor
-│   ├── constraints.py          # Position constraints
-│   └── state.py                # Portfolio state
-├── strategy/
-│   ├── base.py                 # SimpleStrategy
-│   └── blender.py              # StrategyBlender (multi-strategy)
-├── optimization/
-│   └── walk_forward.py         # Walk-forward optimization
-├── risk/                       # Risk management
-│   ├── costs.py                # Trading costs
-│   └── manager.py              # Risk manager
-├── analytics/
-│   ├── metrics.py              # Performance metrics
-│   ├── monte_carlo.py          # Monte Carlo simulation
-│   ├── attribution.py          # Performance attribution
-│   ├── rolling.py              # Rolling metrics
-│   ├── drawdown.py             # Drawdown analysis
-│   └── report.py               # HTML report generation
-└── cli/                        # Command-line tools
-    ├── main.py                 # CLI entry point
-    └── commands/               # CLI commands
+│
+├── trading/                    # Trading system
+│   ├── engine/                 # Trading engines
+│   │   ├── backtest.py         # BacktestEngine
+│   │   └── live.py             # LiveEngine (paper/live)
+│   ├── execution/              # Order execution
+│   │   ├── backtest.py         # BacktestExecutor
+│   │   ├── live.py             # LiveExecutor (CCXT integration)
+│   │   ├── order_tracker.py    # Order tracking
+│   │   └── position_sync.py    # Position synchronization
+│   ├── factors/                # Factor system
+│   │   ├── ops/                # Factor operations
+│   │   │   ├── time_series.py  # ts_mean, ts_std, correlation
+│   │   │   └── cross_sectional.py  # rank, normalize, winsorize
+│   │   ├── mtf_factor.py       # MultiTimeframeFactor base
+│   │   └── library/
+│   │       ├── momentum.py     # Momentum, MultiTimeframeMomentum
+│   │       ├── volatility.py   # Volatility factors
+│   │       ├── mean_reversion.py   # Bollinger, ZScore, Percentile
+│   │       ├── volume.py       # Volume, VolumeRatio, DollarVolume
+│   │       ├── liquidity.py    # Amihud, EffectiveSpread, VolOfVol
+│   │       └── size.py         # DollarVolumeSize
+│   ├── portfolio/              # Portfolio management
+│   │   ├── constructors.py     # TopN, ScoreWeighted, RiskParity, BlendedConstructor
+│   │   ├── constraints.py      # Position constraints
+│   │   └── state.py            # Portfolio state
+│   ├── strategy/               # Strategy implementation
+│   │   ├── base.py             # SimpleStrategy
+│   │   └── blender.py          # StrategyBlender (multi-strategy)
+│   ├── optimization/           # Optimization
+│   │   └── walk_forward.py     # Walk-forward optimization
+│   └── risk/                   # Risk management
+│       ├── costs.py            # Trading costs
+│       └── manager.py          # Risk manager
+│
+└── analytics/                  # Analytics & reporting
+    ├── metrics.py              # Performance metrics
+    ├── monte_carlo.py          # Monte Carlo simulation
+    ├── attribution.py          # Performance attribution
+    ├── rolling.py              # Rolling metrics
+    ├── drawdown.py             # Drawdown analysis
+    └── report.py               # HTML report generation
 ```
 
 ## Engine Modes
@@ -226,8 +249,8 @@ clyptq/
 **Backtest**: Deterministic execution with historical data, no real money
 
 ```python
-from clyptq.engine import BacktestEngine
-from clyptq.execution.backtest import BacktestExecutor
+from clyptq.trading.engine import BacktestEngine
+from clyptq.trading.execution.backtest import BacktestExecutor
 
 executor = BacktestExecutor(cost_model)
 engine = BacktestEngine(strategy, data_store, executor, initial_capital)
@@ -237,8 +260,8 @@ result = engine.run(start, end)
 **Paper**: Real-time execution with real market data, no real money
 
 ```python
-from clyptq.engine import LiveEngine
-from clyptq.execution.live import LiveExecutor
+from clyptq.trading.engine import LiveEngine
+from clyptq.trading.execution.live import LiveExecutor
 from clyptq.core.types import EngineMode
 
 executor = LiveExecutor(
@@ -255,8 +278,8 @@ result = engine.step(timestamp, prices)
 **Live**: Real-time execution with real money (use with caution)
 
 ```python
-from clyptq.engine import LiveEngine
-from clyptq.execution.live import LiveExecutor
+from clyptq.trading.engine import LiveEngine
+from clyptq.trading.execution.live import LiveExecutor
 from clyptq.core.types import EngineMode
 
 executor = LiveExecutor(
