@@ -22,13 +22,18 @@ class LiveDataStore:
         Args:
             symbol: Trading symbol
             df: DataFrame with columns [timestamp, open, high, low, close, volume]
+                or DatetimeIndex with OHLCV columns
         """
-        if "timestamp" not in df.columns:
-            raise ValueError("DataFrame must have 'timestamp' column")
-
         df = df.copy()
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
-        df = df.set_index("timestamp").sort_index()
+
+        # Handle both timestamp column and DatetimeIndex
+        if "timestamp" in df.columns:
+            df["timestamp"] = pd.to_datetime(df["timestamp"])
+            df = df.set_index("timestamp").sort_index()
+        elif isinstance(df.index, pd.DatetimeIndex):
+            df = df.sort_index()
+        else:
+            raise ValueError("DataFrame must have 'timestamp' column or DatetimeIndex")
 
         if len(df) > 0:
             cutoff = df.index[-1] - timedelta(days=self.lookback_days - 1)

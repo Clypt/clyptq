@@ -7,10 +7,10 @@ import pytest
 
 from clyptq.core.base import Factor
 from clyptq.core.types import Constraints
-from clyptq.data.loaders.ccxt import CCXTDataLoader
+from clyptq.data.loaders.ccxt import CCXTLoader
 from clyptq.data.stores.live_store import LiveDataStore
 from clyptq.trading.engine.live import LiveEngine
-from clyptq.trading.execution.live import LiveExecutor
+from clyptq.trading.execution import LiveExecutor
 from clyptq.trading.factors.library.momentum import MomentumFactor
 from clyptq.trading.portfolio.constructors import TopNConstructor
 from clyptq.trading.strategy.base import Strategy
@@ -18,6 +18,7 @@ from clyptq.trading.strategy.base import Strategy
 
 class SimpleTestStrategy(Strategy):
     def __init__(self):
+        super().__init__()
         self._factors = [MomentumFactor(lookback=20)]
         self._constructor = TopNConstructor(top_n=3)
         self._constraints = Constraints()
@@ -90,7 +91,7 @@ def test_end_to_end_paper_workflow():
     strategy = SimpleTestStrategy()
     store = LiveDataStore(lookback_days=60)
 
-    loader = CCXTDataLoader(exchange_id="binance", sandbox=False)
+    loader = CCXTLoader(exchange_id="binance", sandbox=False)
     universe = strategy.universe()
 
     print("Loading historical data...")
@@ -98,8 +99,8 @@ def test_end_to_end_paper_workflow():
         df = loader.load_ohlcv(
             symbol=symbol,
             timeframe="1d",
-            start=datetime.now(timezone.utc) - timedelta(days=60),
-            end=datetime.now(timezone.utc),
+            since=datetime.now(timezone.utc) - timedelta(days=60),
+            limit=60,
         )
         store.add_historical(symbol, df)
 
@@ -187,14 +188,14 @@ def test_multi_strategy_concurrent():
         strategy = strategy_class()
         store = LiveDataStore(lookback_days=40)
 
-        loader = CCXTDataLoader(exchange_id="binance", sandbox=False)
+        loader = CCXTLoader(exchange_id="binance", sandbox=False)
         for symbol in strategy.universe():
             try:
                 df = loader.load_ohlcv(
                     symbol=symbol,
                     timeframe="1d",
-                    start=datetime.now(timezone.utc) - timedelta(days=40),
-                    end=datetime.now(timezone.utc),
+                    since=datetime.now(timezone.utc) - timedelta(days=40),
+                    limit=40,
                 )
                 store.add_historical(symbol, df)
             except Exception as e:
@@ -259,14 +260,14 @@ def test_network_failure_recovery():
     strategy = SimpleTestStrategy()
     store = LiveDataStore(lookback_days=40)
 
-    loader = CCXTDataLoader(exchange_id="binance", sandbox=False)
+    loader = CCXTLoader(exchange_id="binance", sandbox=False)
     for symbol in strategy.universe():
         try:
             df = loader.load_ohlcv(
                 symbol=symbol,
                 timeframe="1d",
-                start=datetime.now(timezone.utc) - timedelta(days=40),
-                end=datetime.now(timezone.utc),
+                since=datetime.now(timezone.utc) - timedelta(days=40),
+                limit=40,
             )
             store.add_historical(symbol, df)
         except Exception:
@@ -324,14 +325,14 @@ def test_position_sync_across_restarts():
     strategy = SimpleTestStrategy()
     store = LiveDataStore(lookback_days=40)
 
-    loader = CCXTDataLoader(exchange_id="binance", sandbox=False)
+    loader = CCXTLoader(exchange_id="binance", sandbox=False)
     for symbol in strategy.universe():
         try:
             df = loader.load_ohlcv(
                 symbol=symbol,
                 timeframe="1d",
-                start=datetime.now(timezone.utc) - timedelta(days=40),
-                end=datetime.now(timezone.utc),
+                since=datetime.now(timezone.utc) - timedelta(days=40),
+                limit=40,
             )
             store.add_historical(symbol, df)
         except Exception:

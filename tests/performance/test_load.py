@@ -36,6 +36,7 @@ class SimpleMomentum(Factor):
 
 class LoadTestStrategy(Strategy):
     def __init__(self, num_factors: int = 5):
+        super().__init__()
         self._factors = [SimpleMomentum(lookback=10 + i * 5) for i in range(num_factors)]
         self._constructor = TopNConstructor(top_n=10)
         self._constraints = Constraints()
@@ -99,7 +100,7 @@ def test_100_symbol_universe():
     print(f"Data generation: {data_gen_time:.2f}s")
 
     strategy = LoadTestStrategy(num_factors=num_factors)
-    cost_model = CostModel(taker_fee_bps=10, maker_fee_bps=10, slippage_bps=5)
+    cost_model = CostModel(taker_fee=0.001, maker_fee=0.001, slippage_bps=5)
     executor = BacktestExecutor(cost_model)
     engine = BacktestEngine(strategy, store, executor, initial_capital=100000)
 
@@ -112,11 +113,11 @@ def test_100_symbol_universe():
 
     print(f"Backtest time: {backtest_time:.2f}s")
     print(f"Trades: {len(result.trades)}")
-    print(f"Final equity: ${result.equity:.2f}")
-    print(f"Sharpe ratio: {result.sharpe_ratio:.3f}")
+    print(f"Final equity: ${result.snapshots[-1].equity:.2f}")
+    print(f"Sharpe ratio: {result.metrics.sharpe_ratio:.3f}")
 
     assert backtest_time < 60, f"Backtest too slow: {backtest_time:.2f}s"
-    assert result.equity > 0
+    assert result.snapshots[-1].equity > 0
 
 
 @pytest.mark.performance
@@ -166,7 +167,7 @@ def test_memory_leak_detection():
 
     store = generate_large_universe(num_symbols, num_bars)
     strategy = LoadTestStrategy(num_factors=3)
-    cost_model = CostModel(taker_fee_bps=10, maker_fee_bps=10, slippage_bps=5)
+    cost_model = CostModel(taker_fee=0.001, maker_fee=0.001, slippage_bps=5)
     executor = BacktestExecutor(cost_model)
 
     tracemalloc.start()
@@ -209,12 +210,12 @@ def run_single_backtest(args):
     store, strategy_params, backtest_params = args
 
     strategy = LoadTestStrategy(**strategy_params)
-    cost_model = CostModel(taker_fee_bps=10, maker_fee_bps=10, slippage_bps=5)
+    cost_model = CostModel(taker_fee=0.001, maker_fee=0.001, slippage_bps=5)
     executor = BacktestExecutor(cost_model)
     engine = BacktestEngine(strategy, store, executor, initial_capital=100000)
 
     result = engine.run(**backtest_params, verbose=False)
-    return result.equity, result.sharpe_ratio, len(result.trades)
+    return result.snapshots[-1].equity, result.metrics.sharpe_ratio, len(result.trades)
 
 
 @pytest.mark.performance
