@@ -11,11 +11,11 @@ import pytest
 
 from clyptq import Constraints, CostModel, EngineMode
 from clyptq.data.stores.store import DataStore
-from clyptq.engine import Engine
-from clyptq.execution import BacktestExecutor
+from clyptq.trading.engine import Engine
+from clyptq.trading.execution import BacktestExecutor
 from clyptq.core.base import Factor
-from clyptq.portfolio.constructors import TopNConstructor
-from clyptq.strategy.base import SimpleStrategy
+from clyptq.trading.portfolio.constructors import TopNConstructor
+from clyptq.trading.strategy.base import SimpleStrategy
 from typing import Dict
 
 

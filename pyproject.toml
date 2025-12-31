@@ -25,6 +25,7 @@ dependencies = [
     "ccxt>=4.0.0",
     "python-dotenv>=1.0.0",
     "matplotlib>=3.7.0",
+    "scipy>=1.11.0",
 ]
 
 [project.scripts]
@@ -71,6 +72,12 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --cov=clyptq --cov-report=term-missing"
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "performance: Performance and load tests",
+    "security: Security audit tests",
+]
 
 [tool.coverage.run]
 source = ["clyptq"]

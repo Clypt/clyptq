@@ -6,7 +6,7 @@ import pytest
 
 from clyptq.data.live.view import LiveDataView
 from clyptq.data.live.buffer import RollingPriceBuffer
-from clyptq.factors.library.momentum import MomentumFactor
+from clyptq.trading.factors.library.momentum import MomentumFactor
 
 
 def test_rolling_buffer_basic():

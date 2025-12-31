@@ -8,11 +8,11 @@ import pytest
 from clyptq import Constraints, CostModel, EngineMode
 from clyptq.analytics.monte_carlo import MonteCarloSimulator
 from clyptq.data.stores.store import DataStore
-from clyptq.engine import Engine
-from clyptq.execution import BacktestExecutor
-from clyptq.factors.library.momentum import MomentumFactor
-from clyptq.portfolio.constructors import TopNConstructor
-from clyptq.strategy.base import SimpleStrategy
+from clyptq.trading.engine import Engine
+from clyptq.trading.execution import BacktestExecutor
+from clyptq.trading.factors.library.momentum import MomentumFactor
+from clyptq.trading.portfolio.constructors import TopNConstructor
+from clyptq.trading.strategy.base import SimpleStrategy
 
 
 def create_test_data():

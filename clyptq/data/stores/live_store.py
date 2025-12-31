@@ -22,13 +22,18 @@ class LiveDataStore:
         Args:
             symbol: Trading symbol
             df: DataFrame with columns [timestamp, open, high, low, close, volume]
+                or DatetimeIndex with OHLCV columns
         """
-        if "timestamp" not in df.columns:
-            raise ValueError("DataFrame must have 'timestamp' column")
-
         df = df.copy()
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
-        df = df.set_index("timestamp").sort_index()
+
+        # Handle both timestamp column and DatetimeIndex
+        if "timestamp" in df.columns:
+            df["timestamp"] = pd.to_datetime(df["timestamp"])
+            df = df.set_index("timestamp").sort_index()
+        elif isinstance(df.index, pd.DatetimeIndex):
+            df = df.sort_index()
+        else:
+            raise ValueError("DataFrame must have 'timestamp' column or DatetimeIndex")
 
         if len(df) > 0:
             cutoff = df.index[-1] - timedelta(days=self.lookback_days - 1)
@@ -42,9 +47,13 @@ class LiveDataStore:
         """Update with new prices (creates daily bar).
 
         Args:
-            timestamp: Current timestamp
+            timestamp: Current timestamp (timezone-aware or naive)
             prices: {symbol: price}
         """
+        # Convert to naive if needed for consistent comparison
+        if timestamp.tzinfo is not None:
+            timestamp = timestamp.replace(tzinfo=None)
+
         cutoff = timestamp - timedelta(days=self.lookback_days - 1)
 
         for symbol, price in prices.items():

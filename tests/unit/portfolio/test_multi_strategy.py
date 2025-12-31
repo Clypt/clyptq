@@ -7,11 +7,11 @@ import pandas as pd
 import pytest
 from datetime import datetime, timedelta
 
-from clyptq.strategy.base import SimpleStrategy
-from clyptq.strategy.blender import StrategyBlender
-from clyptq.factors.library.momentum import MomentumFactor
-from clyptq.factors.library.mean_reversion import ZScoreFactor
-from clyptq.portfolio.constructors import TopNConstructor, ScoreWeightedConstructor
+from clyptq.trading.strategy.base import SimpleStrategy
+from clyptq.trading.strategy.blender import StrategyBlender
+from clyptq.trading.factors.library.momentum import MomentumFactor
+from clyptq.trading.factors.library.mean_reversion import ZScoreFactor
+from clyptq.trading.portfolio.constructors import TopNConstructor, ScoreWeightedConstructor
 from clyptq.core.types import Constraints
 from clyptq.data.stores.store import DataStore
 
@@ -203,7 +203,7 @@ def test_strategy_blender_warmup():
 
 def test_blended_constructor_weight_blending():
     """Test BlendedConstructor blends weights correctly."""
-    from clyptq.portfolio.constructors import BlendedConstructor
+    from clyptq.trading.portfolio.constructors import BlendedConstructor
 
     momentum_strategy = SimpleStrategy(
         factors_list=[MomentumFactor(lookback=20)],

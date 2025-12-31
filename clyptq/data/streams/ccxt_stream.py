@@ -8,6 +8,7 @@ import aiohttp
 import ccxt.async_support as ccxt
 
 from clyptq.data.streams.base import StreamingDataSource
+from clyptq.infra.utils import get_logger
 
 
 class CCXTStreamingSource(StreamingDataSource):
@@ -31,6 +32,7 @@ class CCXTStreamingSource(StreamingDataSource):
         self.api_secret = api_secret
         self.sandbox = sandbox
         self.poll_interval = poll_interval
+        self.logger = get_logger(__name__, context={"exchange": exchange_id, "sandbox": sandbox})
 
         self._exchange: Optional[ccxt.Exchange] = None
         self._session: Optional[aiohttp.ClientSession] = None
@@ -73,12 +75,29 @@ class CCXTStreamingSource(StreamingDataSource):
             config["sandbox"] = True
 
         self._exchange = exchange_class(config)
-        self._running = True  # Set running before async operations
+        self._running = True
 
         try:
             await self._exchange.load_markets()
-        except Exception:
-            # Cleanup on initialization failure
+            self.logger.info("Stream started", extra={"symbols": symbols, "poll_interval": self.poll_interval})
+        except ccxt.NetworkError as e:
+            self.logger.error("Network error initializing stream", extra={"error": str(e)})
+            self._running = False
+            await self._exchange.close()
+            self._exchange = None
+            await self._session.close()
+            self._session = None
+            raise
+        except ccxt.ExchangeError as e:
+            self.logger.error("Exchange error initializing stream", extra={"error": str(e)})
+            self._running = False
+            await self._exchange.close()
+            self._exchange = None
+            await self._session.close()
+            self._session = None
+            raise
+        except Exception as e:
+            self.logger.error("Unexpected error initializing stream", extra={"error": str(e)})
             self._running = False
             await self._exchange.close()
             self._exchange = None
@@ -94,6 +113,7 @@ class CCXTStreamingSource(StreamingDataSource):
             return
 
         self._running = False
+        self.logger.info("Stopping stream")
 
         if self._task:
             self._task.cancel()
@@ -109,6 +129,8 @@ class CCXTStreamingSource(StreamingDataSource):
         if self._session:
             await self._session.close()
             self._session = None
+
+        self.logger.info("Stream stopped")
 
     def is_running(self) -> bool:
         """Check if running."""
@@ -130,8 +152,14 @@ class CCXTStreamingSource(StreamingDataSource):
 
             except asyncio.CancelledError:
                 break
+            except ccxt.NetworkError as e:
+                self.logger.warning("Network error in stream loop", extra={"error": str(e)})
+                await asyncio.sleep(self.poll_interval * 2)
+            except ccxt.ExchangeError as e:
+                self.logger.warning("Exchange error in stream loop", extra={"error": str(e)})
+                await asyncio.sleep(self.poll_interval * 2)
             except Exception as e:
-                print(f"Stream error: {e}")
+                self.logger.error("Unexpected error in stream loop", extra={"error": str(e)})
                 await asyncio.sleep(self.poll_interval * 2)
 
     async def _fetch_prices_async(self, symbols: List[str]) -> Dict[str, float]:

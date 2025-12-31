@@ -8,7 +8,7 @@ import pytest
 from datetime import datetime, timedelta
 
 from clyptq.data.stores.store import DataStore
-from clyptq.factors.library.mean_reversion import (
+from clyptq.trading.factors.library.mean_reversion import (
     BollingerFactor,
     PercentileFactor,
     ZScoreFactor,

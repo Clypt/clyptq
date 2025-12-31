@@ -7,7 +7,7 @@ import pytest
 
 from clyptq.core.base import MultiTimeframeFactor
 from clyptq.data.stores.mtf_store import MultiTimeframeStore
-from clyptq.factors.library.momentum import MultiTimeframeMomentum
+from clyptq.trading.factors.library.momentum import MultiTimeframeMomentum
 
 
 def create_test_data() -> MultiTimeframeStore:

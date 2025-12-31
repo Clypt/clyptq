@@ -3,12 +3,13 @@ from datetime import timedelta
 from clyptq import Constraints, CostModel, EngineMode
 from clyptq.analytics.metrics import print_metrics
 from clyptq.data.loaders.ccxt import load_crypto_data
-from clyptq.engine import BacktestExecutor, Engine
-from clyptq.factors.library.liquidity import AmihudFactor, EffectiveSpreadFactor
-from clyptq.factors.library.size import DollarVolumeSizeFactor
-from clyptq.factors.library.volume import VolumeRatioFactor
-from clyptq.portfolio.constructors import TopNConstructor
-from clyptq.strategy.base import SimpleStrategy
+from clyptq.trading.engine import Engine
+from clyptq.trading.execution import BacktestExecutor
+from clyptq.trading.factors.library.liquidity import AmihudFactor, EffectiveSpreadFactor
+from clyptq.trading.factors.library.size import DollarVolumeSizeFactor
+from clyptq.trading.factors.library.volume import VolumeRatioFactor
+from clyptq.trading.portfolio.constructors import TopNConstructor
+from clyptq.trading.strategy.base import SimpleStrategy
 
 
 class VolumeStrategy(SimpleStrategy):

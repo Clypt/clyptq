@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 
 from clyptq.data.stores.store import DataStore
-from clyptq.factors.library.liquidity import (
+from clyptq.trading.factors.library.liquidity import (
     AmihudFactor,
     EffectiveSpreadFactor,
     VolatilityOfVolatilityFactor,

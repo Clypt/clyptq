@@ -12,14 +12,14 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
-from clyptq.engine import Engine
-from clyptq.execution.backtest import BacktestExecutor
+from clyptq.trading.engine import Engine
+from clyptq.trading.execution.backtest import BacktestExecutor
 from clyptq.data.stores.store import DataStore
 from clyptq.core.base import Factor
-from clyptq.factors.ops.time_series import ts_mean, ts_std, ts_rank, correlation
-from clyptq.factors.ops.cross_sectional import rank
-from clyptq.portfolio.constructors import TopNConstructor
-from clyptq.strategy.base import SimpleStrategy
+from clyptq.trading.factors.ops.time_series import ts_mean, ts_std, ts_rank, correlation
+from clyptq.trading.factors.ops.cross_sectional import rank
+from clyptq.trading.portfolio.constructors import TopNConstructor
+from clyptq.trading.strategy.base import SimpleStrategy
 from clyptq.core.types import EngineMode, Constraints, CostModel
 
 

@@ -1,6 +1,6 @@
 """Tests for position synchronization."""
 
-from clyptq.execution.position_sync import PositionDiscrepancy, PositionSynchronizer
+from clyptq.trading.execution.position_sync import PositionDiscrepancy, PositionSynchronizer
 from clyptq.core.types import Position
 
 

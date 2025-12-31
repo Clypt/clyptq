@@ -88,3 +88,4 @@ CLAUDE.md
 *.json
 *PLAN.md
 docs/
+.serena/
