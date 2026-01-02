@@ -1,4 +1,5 @@
-from typing import Dict, List
+from datetime import datetime, timedelta
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -128,3 +129,70 @@ class FactorAnalyzer:
         quintiles["spread"] = quintiles["Q5"]["mean_return"] - quintiles["Q1"]["mean_return"]
 
         return quintiles
+
+    def ic_decay_analysis(
+        self, factor: Factor, data: DataStore, max_horizon: int = 20
+    ) -> pd.DataFrame:
+        symbols = data.symbols()
+        if not symbols:
+            return pd.DataFrame()
+
+        first_symbol = symbols[0]
+        timestamps = data._data[first_symbol].index.to_pydatetime().tolist()
+
+        if len(timestamps) < max_horizon + 2:
+            return pd.DataFrame()
+
+        results = {f"day_{i+1}": [] for i in range(max_horizon)}
+
+        for i in range(len(timestamps) - max_horizon):
+            current_ts = timestamps[i]
+            view = data.get_view(current_ts)
+
+            try:
+                scores = factor.compute(view)
+            except (ValueError, KeyError):
+                continue
+
+            if not scores:
+                continue
+
+            for horizon in range(1, max_horizon + 1):
+                future_ts = timestamps[i + horizon]
+                future_returns = self._calculate_forward_returns(
+                    data, current_ts, future_ts, scores.keys()
+                )
+
+                if future_returns:
+                    ic = self.information_coefficient(scores, future_returns)
+                    results[f"day_{horizon}"].append(ic)
+
+        decay_df = pd.DataFrame({
+            "horizon": list(range(1, max_horizon + 1)),
+            "mean_ic": [np.mean(results[f"day_{i+1}"]) if results[f"day_{i+1}"] else 0.0
+                       for i in range(max_horizon)],
+            "std_ic": [np.std(results[f"day_{i+1}"]) if results[f"day_{i+1}"] else 0.0
+                      for i in range(max_horizon)],
+            "abs_mean_ic": [np.mean(np.abs(results[f"day_{i+1}"])) if results[f"day_{i+1}"] else 0.0
+                           for i in range(max_horizon)]
+        })
+
+        return decay_df
+
+    def _calculate_forward_returns(
+        self, data: DataStore, start_ts: datetime, end_ts: datetime, symbols: List[str]
+    ) -> Dict[str, float]:
+        returns = {}
+        for symbol in symbols:
+            try:
+                start_view = data.get_view(start_ts)
+                end_view = data.get_view(end_ts)
+
+                start_price = start_view.close(symbol, 1)[0]
+                end_price = end_view.close(symbol, 1)[0]
+
+                returns[symbol] = (end_price - start_price) / start_price
+            except (KeyError, ValueError, IndexError):
+                continue
+
+        return returns
