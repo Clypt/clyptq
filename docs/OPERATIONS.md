@@ -259,6 +259,80 @@ eth_prices = np.array([200, 204, 208, 206, 210])
 corr = correlation(btc_prices, eth_prices, 5)  # ~0.98
 ```
 
+## Factor Combination Operations
+
+Operations that transform or combine multiple factors to reduce redundancy and improve signal quality.
+
+### orthogonalize_factors(factor_scores)
+
+Apply Gram-Schmidt orthogonalization to make factors independent.
+
+**Parameters:**
+- `factor_scores: Dict[str, Dict[str, float]]` - Factor name to symbol-score mapping
+
+**Returns:**
+- `Dict[str, Dict[str, float]]` - Orthogonalized factors
+
+**Example:**
+```python
+from clyptq.trading.factors.ops.factor_combination import orthogonalize_factors
+
+factor_scores = {
+    "momentum": {"BTC/USDT": 0.8, "ETH/USDT": 0.5, "SOL/USDT": 0.3},
+    "trend": {"BTC/USDT": 0.7, "ETH/USDT": 0.6, "SOL/USDT": 0.4},
+}
+orthogonal = orthogonalize_factors(factor_scores)
+# Factors are now orthogonal (dot product ≈ 0)
+```
+
+### pca_factors(factor_scores, n_components=5)
+
+Reduce factor dimensionality using PCA while preserving variance.
+
+**Parameters:**
+- `factor_scores: Dict[str, Dict[str, float]]` - Factor name to symbol-score mapping
+- `n_components: int` - Number of principal components to extract, default 5
+
+**Returns:**
+- `Dict[str, Dict[str, float]]` - Principal component factors (PC1, PC2, ...)
+
+**Example:**
+```python
+from clyptq.trading.factors.ops.factor_combination import pca_factors
+
+factor_scores = {
+    "momentum_5d": {"BTC/USDT": 0.8, "ETH/USDT": 0.5},
+    "momentum_20d": {"BTC/USDT": 0.7, "ETH/USDT": 0.6},
+    "momentum_60d": {"BTC/USDT": 0.6, "ETH/USDT": 0.7},
+}
+pca = pca_factors(factor_scores, n_components=2)
+# {"PC1": {...}, "PC2": {...}}
+```
+
+### remove_correlation(target_factor, conditioning_factors)
+
+Remove correlation between target factor and conditioning factors using linear regression.
+
+**Parameters:**
+- `target_factor: Dict[str, float]` - Target factor symbol-score mapping
+- `conditioning_factors: List[Dict[str, float]]` - List of conditioning factor mappings
+
+**Returns:**
+- `Dict[str, float]` - Residualized target factor
+
+**Example:**
+```python
+from clyptq.trading.factors.ops.factor_combination import remove_correlation
+
+target = {"BTC/USDT": 10.0, "ETH/USDT": 20.0, "SOL/USDT": 30.0}
+conditioning = [
+    {"BTC/USDT": 1.0, "ETH/USDT": 2.0, "SOL/USDT": 3.0},  # market beta
+    {"BTC/USDT": 2.0, "ETH/USDT": 1.0, "SOL/USDT": 0.5},  # sector exposure
+]
+residual = remove_correlation(target, conditioning)
+# Target factor with market/sector effects removed
+```
+
 ## Usage in Custom Factors
 
 ```python
@@ -300,7 +374,15 @@ class CustomAlpha(Factor):
 - Combine `ts_mean()` and `ts_std()` for volatility-adjusted signals
 - Use `correlation()` for pairs trading or sector rotation
 
+**Factor Combination Operations:**
+- Use `orthogonalize_factors()` to remove redundancy between correlated factors
+- Use `pca_factors()` when you have many similar factors and want to extract principal signals
+- Use `remove_correlation()` to create market-neutral or sector-neutral factors
+- Apply orthogonalization before combining factors in portfolio construction
+- Use PCA to reduce dimensionality when factor count exceeds universe size
+
 **Performance:**
 - Cross-sectional operations process all symbols simultaneously
 - Time-series operations are per-symbol and can be parallelized
 - Pre-compute common operations to avoid redundant calculations
+- Factor combination operations scale with factor count, not symbol count

@@ -1,13 +1,15 @@
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, TYPE_CHECKING
 
 import pandas as pd
 
-from clyptq.core.base import Strategy
 from clyptq.core.types import BacktestResult
-from clyptq.data.stores.store import DataStore
-from clyptq.trading.engine.backtest import BacktestEngine
-from clyptq.trading.execution.backtest import BacktestExecutor
+
+if TYPE_CHECKING:
+    from clyptq.core.base import Strategy
+    from clyptq.data.stores.store import DataStore
+    from clyptq.trading.engine.backtest import BacktestEngine
+    from clyptq.trading.execution.backtest import BacktestExecutor
 
 
 def turnover_performance_frontier(
@@ -37,14 +39,16 @@ def turnover_performance_frontier(
 
 
 def optimal_rebalance_frequency(
-    strategy: Strategy,
-    data: DataStore,
-    executor: BacktestExecutor,
+    strategy: "Strategy",
+    data: "DataStore",
+    executor: "BacktestExecutor",
     initial_capital: float,
     start: datetime,
     end: datetime,
     frequencies: List[str] = None,
 ) -> Dict:
+    from clyptq.trading.engine.backtest import BacktestEngine
+
     if frequencies is None:
         frequencies = ["daily", "weekly", "biweekly", "monthly"]
 
