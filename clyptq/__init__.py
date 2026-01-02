@@ -1,4 +1,4 @@
-__version__ = "0.9.0"
+__version__ = "0.10.0"
 
 from clyptq.core.types import (
     Constraints,
@@ -20,6 +20,7 @@ from clyptq.trading.portfolio.constructors import (
     BlendedConstructor,
 )
 from clyptq.trading.portfolio.mean_variance import MeanVarianceConstructor
+from clyptq.trading.portfolio.risk_budget import RiskBudgetConstructor
 from clyptq.data.stores.store import DataStore
 from clyptq.data.stores.live_store import LiveDataStore
 from clyptq.data.loaders.ccxt import load_crypto_data
@@ -50,6 +51,7 @@ __all__ = [
     "RiskParityConstructor",
     "BlendedConstructor",
     "MeanVarianceConstructor",
+    "RiskBudgetConstructor",
     # Data
     "DataStore",
     "LiveDataStore",
