@@ -26,16 +26,16 @@ Quantitative trading system for cryptocurrency markets featuring alpha factor co
 - HTML report generation with equity curves and analytics
 - Comprehensive drawdown analysis (duration, recovery, underwater periods)
 
-### Infrastructure (v0.6.0)
+### Infrastructure (v0.6.1)
 - 5 domain groups architecture (core, infra, data, trading, analytics)
 - SaaS-ready infrastructure (health monitoring, multi-tenancy, export utilities)
 - Research tools (data exploration, factor analyzer, strategy backtester)
-- Comprehensive testing suite (192 tests: load, integration, security)
+- Comprehensive testing suite (186 unit tests)
 - Security audit tools (credential safety, secrets management, PII redaction)
 
 ### Integrations
 - CCXT integration for 100+ cryptocurrency exchanges
-- 61.69% test coverage with 192 passing tests
+- 61% test coverage with 186 passing tests
 - Production-ready code quality and maintainability
 
 ## Installation

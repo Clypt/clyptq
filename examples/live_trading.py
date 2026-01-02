@@ -1,91 +1,69 @@
 """
-Example 5: Paper Trading with Real Prices
+Live Trading Example
 
-Shows how to:
-- Run paper trading with live market prices
-- Use the same strategy as backtesting
-- Monitor real-time rebalancing
-- Track P&L without real money
+WARNING: This uses REAL MONEY. Test thoroughly in paper mode first.
 
 Usage:
-    python examples/05_paper_trading.py
+    export BINANCE_API_KEY=your_key
+    export BINANCE_API_SECRET=your_secret
+    python examples/live_trading.py
 
-Note: Press Ctrl+C to stop and view results
+Note: Press Ctrl+C to stop
 """
 
 import os
 import time
 from datetime import datetime
 
-from clyptq import Constraints, CostModel, EngineMode
+from clyptq import CostModel
+from clyptq.core.types import EngineMode
 from clyptq.data.stores.live_store import LiveDataStore
-from clyptq.trading.engine import Engine
+from clyptq.trading.engine import LiveEngine
 from clyptq.trading.execution.live import CCXTExecutor
-from clyptq.trading.factors.library.momentum import MomentumFactor
-from clyptq.trading.factors.library.volatility import VolatilityFactor
-from clyptq.trading.portfolio.constructors import TopNConstructor
-from clyptq.trading.strategy.base import SimpleStrategy
 
-
-class MomentumStrategy(SimpleStrategy):
-    """Buy high momentum, low volatility assets."""
-
-    def __init__(self):
-        factors = [
-            MomentumFactor(lookback=20),
-            VolatilityFactor(lookback=20),
-        ]
-
-        constraints = Constraints(
-            max_position_size=0.4,
-            max_gross_exposure=1.0,
-            min_position_size=0.1,
-            max_num_positions=3,
-            allow_short=False,
-        )
-
-        super().__init__(
-            factors_list=factors,
-            constructor=TopNConstructor(top_n=3),
-            constraints_obj=constraints,
-            schedule_str="daily",
-            warmup=25,
-            name="Momentum",
-        )
+from strategy import MomentumStrategy
 
 
 def main():
     print("=" * 70)
-    print("PAPER TRADING MODE - Live Prices, No Real Orders")
+    print("LIVE TRADING MODE - REAL MONEY AT RISK")
     print("=" * 70)
 
-    # Strategy
+    api_key = os.getenv("BINANCE_API_KEY")
+    api_secret = os.getenv("BINANCE_API_SECRET")
+
+    if not api_key or not api_secret:
+        print("\nERROR: Set BINANCE_API_KEY and BINANCE_API_SECRET environment variables")
+        return
+
+    # Confirmation
+    print("\nWARNING: This will execute REAL trades with REAL money")
+    confirm = input("Type 'YES' to continue: ")
+    if confirm != "YES":
+        print("Cancelled")
+        return
+
+    # 1. Setup
     strategy = MomentumStrategy()
-    universe = ["BTC/USDT", "ETH/USDT", "BNB/USDT", "SOL/USDT", "ADA/USDT"]
+    universe = ["BTC/USDT", "ETH/USDT", "BNB/USDT"]
+    initial_capital = 1000.0
 
     print(f"\nStrategy: {strategy.name}")
     print(f"Universe: {', '.join(universe)}")
-    print(f"Schedule: {strategy.schedule()}")
-    print(f"Warmup: {strategy.warmup_periods()} periods")
-
-    initial_capital = 10000.0
     print(f"Capital: ${initial_capital:,.0f}\n")
 
-    # Setup executor (paper mode)
-    api_key = os.getenv("BINANCE_API_KEY", "")
-    api_secret = os.getenv("BINANCE_API_SECRET", "")
-
+    # 2. Executor (live mode)
     cost_model = CostModel(maker_fee=0.001, taker_fee=0.001, slippage_bps=5.0)
     executor = CCXTExecutor(
         exchange_id="binance",
         api_key=api_key,
         api_secret=api_secret,
-        paper_mode=True,
+        paper_mode=False,
         cost_model=cost_model,
     )
 
-    # Fetch historical data for warmup
-    print("Fetching historical data for warmup...")
+    # 3. Warmup data
+    print("Fetching warmup data...")
     store = LiveDataStore(lookback_days=strategy.warmup_periods() + 30)
 
     for symbol in universe:
@@ -97,16 +75,16 @@ def main():
         else:
             print("FAILED")
 
-    # Create engine
-    engine = Engine(
+    # 4. Engine
+    engine = LiveEngine(
         strategy=strategy,
         data_store=store,
-        mode=EngineMode.PAPER,
         executor=executor,
         initial_capital=initial_capital,
+        mode=EngineMode.LIVE,
     )
 
-    print("\nStarting paper trading...")
+    print("\nStarting LIVE trading...")
     print("Press Ctrl+C to stop\n")
 
     iteration = 0
@@ -124,17 +102,16 @@ def main():
             result = engine.step(now, prices)
 
             if result.action == "rebalance":
-                print(f"\n[{now.strftime('%Y-%m-%d %H:%M:%S')}] REBALANCE")
+                print(f"\n[{now.strftime('%Y-%m-%d %H:%M:%S')}] REBALANCE (LIVE)")
                 print(f"  Fills: {len(result.fills)}")
                 for fill in result.fills:
                     side = "BUY" if fill.side.value == "buy" else "SELL"
                     print(f"    {side} {fill.symbol}: {fill.amount:.4f} @ ${fill.price:,.2f}")
                 print(f"  Equity: ${result.snapshot.equity:,.2f}")
                 print(f"  Cash: ${result.snapshot.cash:,.2f}")
-                print(f"  Positions: {result.snapshot.num_positions}")
             elif iteration % 10 == 0:
                 print(
-                    f"[{now.strftime('%H:%M:%S')}] Skip ({result.rebalance_reason}) | "
+                    f"[{now.strftime('%H:%M:%S')}] {result.rebalance_reason} | "
                     f"Equity: ${result.snapshot.equity:,.2f}"
                 )
 
@@ -142,21 +119,20 @@ def main():
             time.sleep(60)
 
     except KeyboardInterrupt:
-        print("\n\nStopping paper trading...")
+        print("\n\nStopping...")
 
         if len(engine.trades) > 0:
-            print(f"\nTotal trades: {len(engine.trades)}")
-            final_equity = engine.snapshots[-1].equity if engine.snapshots else initial_capital
+            final_equity = engine.snapshots[-1].equity
             pnl = final_equity - initial_capital
             pnl_pct = (pnl / initial_capital) * 100
+            print(f"\nTrades: {len(engine.trades)}")
             print(f"Final equity: ${final_equity:,.2f}")
             print(f"P&L: ${pnl:,.2f} ({pnl_pct:+.2f}%)")
         else:
-            print("\nNo trades executed")
+            print("\nNo trades")
 
     finally:
         executor.close()
-        print("Done")
 
 
 if __name__ == "__main__":
