@@ -8,7 +8,7 @@ Usage:
 from datetime import timedelta
 
 from clyptq import CostModel
-from clyptq.analytics.metrics import print_metrics
+from clyptq.analytics.performance.metrics import print_metrics
 from clyptq.data.loaders.ccxt import load_crypto_data
 from clyptq.trading.engine import BacktestEngine
 from clyptq.trading.execution import BacktestExecutor

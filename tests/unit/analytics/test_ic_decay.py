@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 
-from clyptq.analytics.factor_analyzer import FactorAnalyzer
-from clyptq.analytics.turnover_analysis import turnover_performance_frontier
+from clyptq.analytics.factors.analyzer import FactorAnalyzer
+from clyptq.analytics.factors.turnover import turnover_performance_frontier
 from clyptq.data.stores.store import DataStore
 from clyptq.trading.factors.library.momentum import MomentumFactor
 from clyptq.core.types import BacktestResult, Snapshot, EngineMode

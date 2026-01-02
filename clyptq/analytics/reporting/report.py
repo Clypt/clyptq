@@ -14,9 +14,9 @@ from typing import Optional
 import matplotlib
 import matplotlib.pyplot as plt
 
-from clyptq.analytics.attribution import PerformanceAttributor
-from clyptq.analytics.drawdown import DrawdownAnalyzer
-from clyptq.analytics.rolling import RollingMetricsCalculator
+from clyptq.analytics.performance.attribution import PerformanceAttributor
+from clyptq.analytics.performance.drawdown import DrawdownAnalyzer
+from clyptq.analytics.performance.rolling import RollingMetricsCalculator
 from clyptq.core.types import BacktestResult
 
 matplotlib.use("Agg")

@@ -279,7 +279,7 @@ class WalkForwardOptimizer:
             combined_snapshots.extend(window.test_result.snapshots)
             combined_trades.extend(window.test_result.trades)
 
-        from clyptq.analytics.metrics import compute_metrics
+        from clyptq.analytics.performance.metrics import compute_metrics
 
         combined_metrics = compute_metrics(combined_snapshots, combined_trades)
         combined_result = BacktestResult(
