@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from clyptq.analytics.simulation import HistoricalSimulator
 from clyptq.core.base import Factor
+from clyptq.trading.optimization.validation import HistoricalSimulator
 from clyptq.core.types import Constraints, CostModel
 from clyptq.data.stores.store import DataStore
 from clyptq.trading.execution import BacktestExecutor

@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 
 import pandas as pd
-from clyptq.analytics.simulation import HistoricalSimulator
 from clyptq.core.base import Factor
+from clyptq.trading.optimization.validation import HistoricalSimulator
 from clyptq.core.types import Constraints, CostModel
 from clyptq.data.loaders.ccxt import load_crypto_data
 from clyptq.data.stores.store import DataStore
