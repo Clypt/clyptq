@@ -1,4 +1,4 @@
-__version__ = "0.10.0"
+__version__ = "1.0.0"
 
 from clyptq.core.types import (
     Constraints,
@@ -13,6 +13,7 @@ from clyptq.trading.engine import BacktestEngine, LiveEngine
 from clyptq.trading.execution import BacktestExecutor, LiveExecutor
 from clyptq.trading.strategy.base import SimpleStrategy
 from clyptq.trading.strategy.blender import StrategyBlender
+from clyptq.trading.strategy.adaptive import AdaptiveStrategy
 from clyptq.trading.portfolio.constructors import (
     TopNConstructor,
     ScoreWeightedConstructor,
@@ -45,6 +46,7 @@ __all__ = [
     # Strategies
     "SimpleStrategy",
     "StrategyBlender",
+    "AdaptiveStrategy",
     # Portfolio Constructors
     "TopNConstructor",
     "ScoreWeightedConstructor",

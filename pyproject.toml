@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "clyptq"
-version = "0.10.0"
+version = "1.0.0"
 description = "Quantitative cryptocurrency trading engine"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -12,11 +12,14 @@ authors = [
     {name = "Jaden - Clypt", email = "jaden@clypt.ai"}
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial :: Investment",
 ]
 
 dependencies = [

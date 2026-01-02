@@ -26,17 +26,26 @@ Quantitative trading system for cryptocurrency markets featuring alpha factor co
 - HTML report generation with equity curves and analytics
 - Comprehensive drawdown analysis (duration, recovery, underwater periods)
 
-### Infrastructure (v0.7.0)
+### Optimization & Validation (v1.0.0)
+- Adaptive factor weighting with IC/Sharpe/EMA methods
+- Grid search parameter optimization with cross-validation
+- Parallel factor computation (thread/process-based)
+- Historical simulation testing for overfitting detection
+- Out-of-sample validation and walk-forward analysis
+- Parameter stability analysis across configurations
+
+### Infrastructure
 - 5 domain groups architecture (core, infra, data, trading, analytics)
 - SaaS-ready infrastructure (health monitoring, multi-tenancy, export utilities)
 - Research tools (data exploration, factor analyzer, strategy backtester)
-- Comprehensive testing suite (192 unit tests, 60% coverage)
+- Comprehensive testing suite (290 unit tests, 65% coverage)
 - Security audit tools (credential safety, secrets management, PII redaction)
+- Complete Sphinx API documentation with examples
 
 ### Integrations
 - CCXT integration for 100+ cryptocurrency exchanges
-- 60% test coverage with 192 passing tests
-- Production-ready code quality and maintainability
+- 65% test coverage with 290 passing tests
+- Production/Stable release quality
 
 ## Installation
 

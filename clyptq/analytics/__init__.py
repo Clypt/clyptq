@@ -19,4 +19,13 @@ __all__ = [
     "MonteCarloSimulator",
     "HTMLReportGenerator",
     "DataExplorer",
+    "HistoricalSimulator",
 ]
+
+
+def __getattr__(name):
+    if name == "HistoricalSimulator":
+        from clyptq.analytics.simulation import HistoricalSimulator
+
+        return HistoricalSimulator
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

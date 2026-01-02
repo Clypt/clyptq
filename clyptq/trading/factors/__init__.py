@@ -1,3 +1,5 @@
 """Alpha factor computation and management."""
 
-__all__ = []
+from clyptq.trading.factors.parallel import ParallelFactorComputer
+
+__all__ = ["ParallelFactorComputer"]
