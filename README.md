@@ -9,7 +9,7 @@ Quantitative trading system for cryptocurrency markets featuring alpha factor co
 ## Features
 
 ### Core Trading System
-- Alpha factor framework with 15+ production-ready factors
+- Alpha factor framework with 21+ production-ready factors
 - Multiple portfolio construction strategies (Top-N, Score-Weighted, Risk Parity, Blended)
 - Event-driven backtesting engine with look-ahead bias prevention
 - Paper/Live trading with real-time factor-based execution
@@ -26,16 +26,16 @@ Quantitative trading system for cryptocurrency markets featuring alpha factor co
 - HTML report generation with equity curves and analytics
 - Comprehensive drawdown analysis (duration, recovery, underwater periods)
 
-### Infrastructure (v0.6.1)
+### Infrastructure (v0.7.0)
 - 5 domain groups architecture (core, infra, data, trading, analytics)
 - SaaS-ready infrastructure (health monitoring, multi-tenancy, export utilities)
 - Research tools (data exploration, factor analyzer, strategy backtester)
-- Comprehensive testing suite (186 unit tests)
+- Comprehensive testing suite (192 unit tests, 60% coverage)
 - Security audit tools (credential safety, secrets management, PII redaction)
 
 ### Integrations
 - CCXT integration for 100+ cryptocurrency exchanges
-- 61% test coverage with 186 passing tests
+- 60% test coverage with 192 passing tests
 - Production-ready code quality and maintainability
 
 ## Installation
@@ -216,12 +216,14 @@ clyptq/
 │   │   │   └── cross_sectional.py  # rank, normalize, winsorize
 │   │   ├── mtf_factor.py       # MultiTimeframeFactor base
 │   │   └── library/
-│   │       ├── momentum.py     # Momentum, MultiTimeframeMomentum
+│   │       ├── momentum.py     # Momentum, RSI, TrendStrength, MultiTimeframeMomentum
 │   │       ├── volatility.py   # Volatility factors
 │   │       ├── mean_reversion.py   # Bollinger, ZScore, Percentile
 │   │       ├── volume.py       # Volume, VolumeRatio, DollarVolume
 │   │       ├── liquidity.py    # Amihud, EffectiveSpread, VolOfVol
-│   │       └── size.py         # DollarVolumeSize
+│   │       ├── size.py         # DollarVolumeSize
+│   │       ├── value.py        # RealizedSpread, PriceEfficiency, ImpliedBasis
+│   │       └── quality.py      # VolumeStability, PriceImpact, MarketDepthProxy
 │   ├── portfolio/              # Portfolio management
 │   │   ├── constructors.py     # TopN, ScoreWeighted, RiskParity, BlendedConstructor
 │   │   ├── constraints.py      # Position constraints
