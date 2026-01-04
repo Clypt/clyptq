@@ -1,21 +1,22 @@
 """Performance analytics and metrics."""
 
-from clyptq.analytics.data_explorer import DataExplorer
-from clyptq.analytics.factor_analyzer import FactorAnalyzer
-from clyptq.analytics.signal_quality import SignalQuality
-from clyptq.analytics.visualizations import (
-    FactorVisualizer,
-    PerformanceVisualizer,
-    PortfolioVisualizer,
-    TradeVisualizer,
+from clyptq.analytics.factors import FactorAnalyzer
+from clyptq.analytics.performance import (
+    compute_metrics,
+    PerformanceAttributor,
+    RollingMetricsCalculator,
+    DrawdownAnalyzer,
 )
+from clyptq.analytics.risk import MonteCarloSimulator
+from clyptq.analytics.reporting import HTMLReportGenerator, DataExplorer
 
 __all__ = [
-    "DataExplorer",
     "FactorAnalyzer",
-    "FactorVisualizer",
-    "PerformanceVisualizer",
-    "PortfolioVisualizer",
-    "SignalQuality",
-    "TradeVisualizer",
+    "compute_metrics",
+    "PerformanceAttributor",
+    "RollingMetricsCalculator",
+    "DrawdownAnalyzer",
+    "MonteCarloSimulator",
+    "HTMLReportGenerator",
+    "DataExplorer",
 ]

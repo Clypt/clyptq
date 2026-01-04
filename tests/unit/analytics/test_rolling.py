@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from clyptq.analytics.rolling import RollingMetricsCalculator, RollingMetricsResult
+from clyptq.analytics.performance.rolling import RollingMetricsCalculator, RollingMetricsResult
 from clyptq.core.types import (
     BacktestResult,
     Snapshot,

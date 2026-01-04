@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
-from clyptq.analytics.metrics import compute_metrics
+from clyptq.analytics.performance.metrics import compute_metrics
 from clyptq.core.base import Executor, Factor, PortfolioConstructor, Strategy
 from clyptq.core.types import BacktestResult, EngineMode, Fill, Order, OrderSide, Snapshot
 from clyptq.data.stores.store import DataStore
@@ -87,7 +87,7 @@ class BacktestEngine:
         verbose: bool = False,
     ):
         """Run Monte Carlo simulation on current backtest results."""
-        from clyptq.analytics.monte_carlo import MonteCarloSimulator
+        from clyptq.analytics.risk.monte_carlo import MonteCarloSimulator
 
         if not self.snapshots:
             raise ValueError("No backtest results available. Run run() first.")
@@ -112,7 +112,7 @@ class BacktestEngine:
         result = simulator.run(backtest_result, initial_capital=self.portfolio.initial_cash)
 
         if verbose:
-            from clyptq.analytics.monte_carlo import print_monte_carlo_results
+            from clyptq.analytics.risk.monte_carlo import print_monte_carlo_results
 
             print_monte_carlo_results(result)
 

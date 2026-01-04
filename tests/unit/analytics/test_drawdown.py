@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from clyptq.analytics.drawdown import DrawdownAnalyzer, DrawdownAnalysis, DrawdownPeriod
+from clyptq.analytics.performance.drawdown import DrawdownAnalyzer, DrawdownAnalysis, DrawdownPeriod
 from clyptq.core.types import (
     BacktestResult,
     Snapshot,

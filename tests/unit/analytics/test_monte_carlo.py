@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from clyptq import Constraints, CostModel, EngineMode
-from clyptq.analytics.monte_carlo import MonteCarloSimulator
+from clyptq.analytics.risk.monte_carlo import MonteCarloSimulator
 from clyptq.data.stores.store import DataStore
 from clyptq.trading.engine import Engine
 from clyptq.trading.execution import BacktestExecutor

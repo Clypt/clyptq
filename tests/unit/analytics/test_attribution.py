@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from clyptq.analytics.attribution import PerformanceAttributor, AttributionResult
+from clyptq.analytics.performance.attribution import PerformanceAttributor, AttributionResult
 from clyptq.core.types import (
     BacktestResult,
     Snapshot,

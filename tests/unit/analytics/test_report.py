@@ -4,7 +4,7 @@ import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from clyptq.analytics.report import HTMLReportGenerator
+from clyptq.analytics.reporting.report import HTMLReportGenerator
 from clyptq.core.types import (
     BacktestResult,
     Snapshot,

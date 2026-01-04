@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from clyptq import EngineMode
-from clyptq.analytics.metrics import print_metrics
+from clyptq.analytics.performance.metrics import print_metrics
 from clyptq.data.stores.store import DataStore
 from clyptq.trading.engine import Engine
 from clyptq.trading.execution import BacktestExecutor

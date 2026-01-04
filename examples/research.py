@@ -14,9 +14,9 @@ Usage:
 from datetime import timedelta
 
 from clyptq import CostModel, Constraints
-from clyptq.analytics.monte_carlo import MonteCarloSimulator
-from clyptq.analytics.report import HTMLReportGenerator
-from clyptq.analytics.attribution import PerformanceAttributor
+from clyptq.analytics.risk.monte_carlo import MonteCarloSimulator
+from clyptq.analytics.reporting.report import HTMLReportGenerator
+from clyptq.analytics.performance.attribution import PerformanceAttributor
 from clyptq.data.loaders.ccxt import load_crypto_data
 from clyptq.trading.engine import BacktestEngine
 from clyptq.trading.execution import BacktestExecutor
