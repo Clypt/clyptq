@@ -13,11 +13,13 @@ class DataExplorer:
 
     def statistical_summary(self, symbols: Optional[List[str]] = None) -> pd.DataFrame:
         if symbols is None:
-            symbols = self.store.symbols
+            symbols = self.store.symbols()
 
         summaries = []
         for symbol in symbols:
-            df = self.store.get_ohlcv(symbol)
+            if symbol not in self.store._data:
+                continue
+            df = self.store._data[symbol]
             if df.empty:
                 continue
 
@@ -45,11 +47,13 @@ class DataExplorer:
         self, symbols: Optional[List[str]] = None, window: Optional[int] = None
     ) -> pd.DataFrame:
         if symbols is None:
-            symbols = self.store.symbols
+            symbols = self.store.symbols()
 
         returns_data = {}
         for symbol in symbols:
-            df = self.store.get_ohlcv(symbol)
+            if symbol not in self.store._data:
+                continue
+            df = self.store._data[symbol]
             if df.empty:
                 continue
 
@@ -68,7 +72,9 @@ class DataExplorer:
     def price_statistics(
         self, symbol: str, start: Optional[datetime] = None, end: Optional[datetime] = None
     ) -> Dict:
-        df = self.store.get_ohlcv(symbol)
+        if symbol not in self.store._data:
+            return {}
+        df = self.store._data[symbol]
         if df.empty:
             return {}
 
@@ -100,7 +106,9 @@ class DataExplorer:
         }
 
     def volume_profile(self, symbol: str, bins: int = 20) -> pd.DataFrame:
-        df = self.store.get_ohlcv(symbol)
+        if symbol not in self.store._data:
+            return pd.DataFrame()
+        df = self.store._data[symbol]
         if df.empty:
             return pd.DataFrame()
 
@@ -124,7 +132,9 @@ class DataExplorer:
         return pd.DataFrame(volume_profile)
 
     def seasonality_analysis(self, symbol: str) -> Dict[str, pd.Series]:
-        df = self.store.get_ohlcv(symbol)
+        if symbol not in self.store._data:
+            return {}
+        df = self.store._data[symbol]
         if df.empty:
             return {}
 
@@ -138,8 +148,10 @@ class DataExplorer:
     def rolling_correlation(
         self, symbol1: str, symbol2: str, window: int = 20
     ) -> pd.Series:
-        df1 = self.store.get_ohlcv(symbol1)
-        df2 = self.store.get_ohlcv(symbol2)
+        if symbol1 not in self.store._data or symbol2 not in self.store._data:
+            return pd.Series()
+        df1 = self.store._data[symbol1]
+        df2 = self.store._data[symbol2]
 
         if df1.empty or df2.empty:
             return pd.Series()

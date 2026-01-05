@@ -1,93 +1,236 @@
 # ClyptQ Examples
 
-Production-ready examples for backtesting, paper trading, live trading, and quantitative research.
+Jupyter notebook examples for quantitative crypto trading research.
 
 ## Quick Start
 
-### 1. Backtesting
-Historical data backtest with performance metrics.
-
 ```bash
-python examples/backtesting.py
+jupyter notebook examples/01_quickstart.ipynb
 ```
 
-No API keys required. Downloads 720 days of data and runs backtest.
+## Notebook Overview
 
-### 2. Paper Trading
-Real-time prices, simulated orders (no real money).
+### 1. Quickstart (01_quickstart.ipynb)
+**Goal**: Run your first backtest in 5 minutes
 
-```bash
-python examples/paper_trading.py
-```
+**What you'll learn**:
+- Load crypto data from Binance
+- Create a simple momentum strategy
+- Run backtest and analyze results
 
-Requires API keys. Press Ctrl+C to stop and view results.
+**Time**: 5 minutes
 
-### 3. Live Trading
-Real orders with real money (USE WITH EXTREME CAUTION).
+---
 
-```bash
-export BINANCE_API_KEY=your_key
-export BINANCE_API_SECRET=your_secret
-python examples/live_trading.py
-```
+### 2. Data Exploration (02_data_exploration.ipynb)
+**Goal**: Understand your data before backtesting
 
-Types "YES" to confirm before execution.
+**What you'll learn**:
+- Data quality checks (missing values, outliers)
+- Price distribution and correlation analysis
+- Volume and liquidity patterns
+- Identify data issues early
 
-### 4. Quantitative Research
-Comprehensive factor research framework.
+**Time**: 10 minutes
 
-```bash
-python examples/research.py
-```
+---
 
-**Features:**
-- Tests 3 strategy variants (Baseline, Normalized, ShortLookback)
-- Performance comparison table
-- Monte Carlo simulation (1000 runs)
-- Performance attribution analysis
-- Factor contribution breakdown
-- Generates HTML report: `quant_research_report.html`
+### 3. Factor Research (03_factor_research.ipynb)
+**Goal**: Develop and validate alpha factors
 
-**Output:**
-- Strategy comparison metrics
-- Detailed performance analysis
-- Risk metrics (VaR, CVaR, probability of loss)
-- Sharpe ratio confidence intervals
-- Factor analysis
-- HTML report with equity curve, attribution, drawdowns, rolling metrics
+**What you'll learn**:
+- Signal quality analysis (IC, IR, hit rate)
+- IC decay: how long factors stay predictive
+- Turnover-performance tradeoff
+- Factor orthogonalization (remove redundancy)
 
-## Files
+**Key concepts**:
+- **IC (Information Coefficient)**: Correlation between factor and future returns
+- **IR (Information Ratio)**: IC mean / IC std (consistency)
+- **IC Decay**: How long does the signal last?
+- **Orthogonalization**: Remove redundancy between factors
 
-### strategy.py
-Common momentum + volatility strategy (Top-3 positions, daily rebalance).
+**Time**: 20 minutes
 
-### backtesting.py
-Simple backtest example (90-day test period).
+---
 
-### paper_trading.py
-Paper trading loop with live prices (60-second intervals).
+### 4. Strategy Comparison (04_strategy_comparison.ipynb)
+**Goal**: Compare different strategy approaches
 
-### live_trading.py
-Live trading with confirmation prompt (REAL MONEY).
-
-### research.py
-**Quantitative research framework** with:
-- Multiple strategy variants comparison
-- Cross-sectional normalization testing
-- Lookback period sensitivity analysis
+**What you'll learn**:
+- Momentum vs Mean Reversion
+- Multi-factor combination
+- Long-short market neutral
 - Performance attribution
-- Monte Carlo risk assessment
-- Comprehensive HTML reporting
+- Monte Carlo risk analysis
+
+**Strategies tested**:
+1. **Momentum Only**: Trend following (works in bull markets)
+2. **Mean Reversion**: Contrarian (works in ranging/bear)
+3. **Multi-Factor**: Combined signals (robust)
+4. **Long-Short**: Market neutral (hedged)
+
+**Time**: 15 minutes
+
+---
+
+### 5. Parameter Optimization (05_parameter_optimization.ipynb)
+**Goal**: Find optimal strategy parameters
+
+**What you'll learn**:
+- Grid search with cross-validation
+- Walk-forward analysis
+- Out-of-sample validation
+- Overfitting detection
+- Parameter stability analysis
+
+**Methods**:
+- **Grid Search**: Test all parameter combinations
+- **Walk-Forward**: Rolling train/test windows
+- **Out-of-Sample**: Train on first half, test on second half
+- **Stability Analysis**: Are nearby parameters also good?
+
+**Time**: 25 minutes
+
+---
+
+### 6. Portfolio Optimization (06_portfolio_optimization.ipynb)
+**Goal**: Optimize portfolio construction methods
+
+**What you'll learn**:
+- TopN (simple selection)
+- ScoreWeighted (factor-based weights)
+- Mean-Variance (Markowitz)
+- Risk Parity (equal risk contribution)
+- Blended (combine multiple methods)
+
+**Recommendation**:
+- **Beginners**: TopN
+- **Robustness**: RiskParity or Blended
+- **Max Sharpe**: MeanVariance (watch overfitting)
+- **Factor strategies**: ScoreWeighted
+
+**Time**: 20 minutes
+
+---
+
+### 7. Risk Analysis (07_risk_analysis.ipynb)
+**Goal**: Comprehensive risk assessment before production
+
+**What you'll learn**:
+- Monte Carlo simulation (bootstrap 1000 runs)
+- Drawdown analysis
+- Rolling risk metrics
+- Stress testing
+- Risk limits and monitoring
+
+**Production checklist**:
+- P(Loss) <20%
+- Max Drawdown <30%
+- Min Sharpe >0.5
+- CVaR (5%) <15%
+
+**Time**: 20 minutes
+
+---
+
+### 8. Paper Trading (08_paper_trading.ipynb)
+**Goal**: Deploy strategy to paper trading
+
+**What you'll learn**:
+- Set up LiveEngine with LiveDataStore
+- Paper mode (simulated orders)
+- Real-time factor computation
+- Position tracking and reconciliation
+- Transition from backtest to live
+
+**Key differences**: Backtest vs Paper vs Live
+- **Backtest**: Historical data, fast, no risk
+- **Paper**: Real-time data, simulated orders, no risk
+- **Live**: Real-time data, real orders, real money
+
+**Time**: 25 minutes
+
+---
+
+## Research Workflow
+
+Follow notebooks in order for complete research workflow:
+
+```
+01_quickstart.ipynb            
+    ↓
+02_data_exploration.ipynb        
+    ↓
+03_factor_research.ipynb
+    ↓
+04_strategy_comparison.ipynb
+    ↓
+05_parameter_optimization.ipynb
+    ↓
+06_portfolio_optimization.ipynb
+    ↓
+07_risk_analysis.ipynb
+    ↓
+08_paper_trading.ipynb
+```
+
+**Total time**: ~2.5 hours for complete workflow
+
+## Installation
+
+```bash
+pip install clyptq jupyter
+```
+
+## Running Notebooks
+
+```bash
+# Start Jupyter
+jupyter notebook
+
+# Or use JupyterLab
+jupyter lab
+```
 
 ## Requirements
 
 - Python 3.10+
+- Jupyter or JupyterLab
 - Internet connection (for data download)
-- API keys (for paper/live trading only)
 
-## Notes
+## Tips
 
-- Backtesting: No API keys, downloads data automatically
-- Paper trading: API keys required, no real orders
-- Live trading: API keys + "YES" confirmation, REAL orders
-- Research: No API keys, generates comprehensive analysis
+**Data Download**:
+- First run may take 30-60 seconds per notebook
+- Data is cached by CCXT
+- Use smaller universe for faster testing
+
+**Performance**:
+- Start with 5-10 symbols
+- Use 365 days for quick tests
+- 720 days for production backtests
+
+**Customization**:
+- All notebooks use same data structure
+- Easy to swap factors, strategies, parameters
+- Modify constraints, costs, universe as needed
+
+## Support
+
+- **Documentation**: `docs/`
+- **Issues**: https://github.com/Clypt/clyptq/issues
+- **Examples**: This directory
+
+## Next Steps
+
+After completing notebooks:
+
+1. **Read QUANT_RESEARCH.md**: Comprehensive research guide
+2. **Explore Factor Library**: `clyptq/trading/factors/library/`
+3. **Custom Factors**: Implement your own in `clyptq/core/base.py`
+4. **Production**: Deploy to paper trading, then live
+
+## License
+
+MIT

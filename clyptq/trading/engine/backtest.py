@@ -46,7 +46,8 @@ class BacktestEngine:
 
         self.logger.info("Backtest started", extra={"start": start.isoformat(), "end": end.isoformat(), "timestamps": len(timestamps)})
 
-        warmup = self.strategy.warmup_periods()
+        warmup_days = self.strategy.warmup_periods()
+        warmup = self._convert_warmup_to_periods(warmup_days)
 
         for i, timestamp in enumerate(timestamps):
             if i < warmup:
@@ -127,6 +128,18 @@ class BacktestEngine:
             return pd.date_range(start, end, freq="W-MON").to_pydatetime().tolist()
         elif schedule == "monthly":
             return pd.date_range(start, end, freq="MS").to_pydatetime().tolist()
+        else:
+            raise ValueError(f"Unknown schedule: {schedule}")
+
+    def _convert_warmup_to_periods(self, warmup_days: int) -> int:
+        schedule = self.strategy.schedule()
+
+        if schedule == "daily":
+            return warmup_days
+        elif schedule == "weekly":
+            return max(1, warmup_days // 7)
+        elif schedule == "monthly":
+            return max(1, warmup_days // 30)
         else:
             raise ValueError(f"Unknown schedule: {schedule}")
 
@@ -230,7 +243,6 @@ class BacktestEngine:
                 self.portfolio.apply_fill(fill)
                 self.trades.append(fill)
             except ValueError as e:
-                print(f"Fill rejected: {e}")
                 continue
 
     def _generate_orders(
