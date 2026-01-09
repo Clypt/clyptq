@@ -25,6 +25,7 @@ classifiers = [
 dependencies = [
     "numpy>=1.24.0",
     "pandas>=2.0.0",
+    "pyarrow>=14.0.0,<21.0.0",  # PyArrow 21+ has parquet compatibility issues
     "ccxt>=4.0.0",
     "python-dotenv>=1.0.0",
     "matplotlib>=3.7.0",

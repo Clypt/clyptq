@@ -2,12 +2,18 @@
 Core types and primitives for ClyptQ.
 """
 
-from clyptq.core.base import (
-    Executor,
-    Factor,
-    MultiTimeframeFactor,
-    PortfolioConstructor,
-    Strategy,
+# Re-export from new locations for backwards compatibility
+from clyptq.trading.execution.base import Executor
+from clyptq.strategy.base import Strategy
+from clyptq.core.clock import (
+    BacktestClock,
+    Clock,
+    LiveClock,
+)
+from clyptq.core.timeframe import (
+    calculate_system_clock,
+    timeframe_to_minutes,
+    minutes_to_timeframe,
 )
 from clyptq.core.types import (
     BacktestResult,
@@ -31,10 +37,15 @@ from clyptq.core.types import (
 __all__ = [
     # Base classes
     "Executor",
-    "Factor",
-    "MultiTimeframeFactor",
-    "PortfolioConstructor",
     "Strategy",
+    # Clock
+    "Clock",
+    "BacktestClock",
+    "LiveClock",
+    # Timeframe
+    "calculate_system_clock",
+    "timeframe_to_minutes",
+    "minutes_to_timeframe",
     # Enums
     "EngineMode",
     "OrderSide",

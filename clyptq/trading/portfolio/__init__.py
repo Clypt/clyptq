@@ -1,7 +1,16 @@
-"""Portfolio construction and optimization."""
+"""Portfolio state management.
 
-from clyptq.trading.portfolio.state import PortfolioState
-from clyptq.trading.portfolio.mean_variance import MeanVarianceConstructor
-from clyptq.trading.portfolio.risk_budget import RiskBudgetConstructor
+PortfolioState: Spot cash/position state tracking
+FuturesPortfolioState: Futures margin/leverage position tracking
 
-__all__ = ["PortfolioState", "MeanVarianceConstructor", "RiskBudgetConstructor"]
+- apply_fill(): Apply fill
+- get_snapshot(): Create snapshot
+- get_weights(): Current weights
+- equity(): Calculate total equity
+
+Note: Order calculation (target position, order delta) is in trading/execution/portfolio.py
+"""
+
+from clyptq.trading.portfolio.state import PortfolioState, FuturesPortfolioState
+
+__all__ = ["PortfolioState", "FuturesPortfolioState"]

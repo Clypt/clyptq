@@ -5,7 +5,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-from clyptq.core.base import Executor, Strategy
+from clyptq.trading.execution.base import Executor
+from clyptq.strategy.base import Strategy
 from clyptq.core.types import BacktestResult
 from clyptq.data.stores.store import DataStore
 from clyptq.trading.engine import BacktestEngine

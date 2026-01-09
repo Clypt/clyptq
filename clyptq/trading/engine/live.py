@@ -1,94 +1,164 @@
-"""Live and paper trading engine."""
+"""Live and paper trading engine.
 
-import asyncio
+Supports:
+- Paper mode: Simulated execution with live prices
+- Live mode: Real execution on exchange
+
+Uses DataProvider for unified data access (same interface as backtest/research).
+Strategy accesses data via self.provider.
+"""
+
 import time
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from clyptq.core.base import Executor, Factor, PortfolioConstructor, Strategy
+from clyptq.strategy.base import Strategy
+from clyptq.trading.execution.base import Executor
 from clyptq.core.types import EngineMode, ExecutionResult, Fill, Order, OrderSide, Snapshot
-from clyptq.data.live.buffer import RollingPriceBuffer
-from clyptq.data.live.view import LiveDataView
-from clyptq.data.stores.live_store import LiveDataStore
-from clyptq.data.stores.store import DataStore
-from clyptq.data.streams.base import StreamingDataSource
-from clyptq.trading.execution.position_sync import PositionSynchronizer
-from clyptq.infra.health import HealthChecker, HealthStatus
 from clyptq.trading.portfolio.state import PortfolioState
-from clyptq.trading.risk.manager import RiskManager
 from clyptq.infra.utils import get_logger, GracefulShutdown
 
 
 class LiveEngine:
-    """Live and paper trading engine."""
+    """Live and paper trading engine.
+
+    Uses DataProvider for unified data access (same interface as backtest/research).
+    Strategy accesses data via self.provider.
+
+    Example:
+        ```python
+        # Create strategy with provider
+        strategy = MyStrategy(provider=provider)
+
+        engine = LiveEngine(
+            strategy=strategy,
+            executor=CCXTExecutor(...),
+            mode=EngineMode.PAPER,
+        )
+
+        engine.run_live(interval_seconds=60)
+        ```
+    """
 
     def __init__(
         self,
         strategy: Strategy,
-        data_store: DataStore,
         executor: Executor,
         initial_capital: float = 10000.0,
-        risk_manager: Optional[RiskManager] = None,
         mode: EngineMode = EngineMode.PAPER,
         shutdown_handler: Optional[GracefulShutdown] = None,
     ):
+        """Initialize LiveEngine.
+
+        Args:
+            strategy: Strategy to run (must have loaded provider)
+            executor: Order executor (CCXTExecutor, etc.)
+            initial_capital: Starting capital
+            mode: PAPER or LIVE
+            shutdown_handler: For graceful shutdown
+        """
         if mode not in [EngineMode.LIVE, EngineMode.PAPER]:
             raise ValueError(f"LiveEngine only supports LIVE or PAPER modes, got {mode}")
 
         self.strategy = strategy
-        self.data_store = data_store
+        self.provider = strategy.provider  # Get from strategy
         self.executor = executor
         self.mode = mode
-        self.logger = get_logger(__name__, context={"mode": mode.value, "strategy": strategy.__class__.__name__})
-        self.health_checker = HealthChecker()
-        self.shutdown_handler = shutdown_handler or GracefulShutdown()
         self.portfolio = PortfolioState(initial_capital)
-        self.risk_manager = risk_manager
+        self.shutdown_handler = shutdown_handler or GracefulShutdown()
+
+        self.logger = get_logger(
+            __name__,
+            context={
+                "mode": mode.value,
+                "strategy": strategy.name,
+            },
+        )
+
         self.snapshots: List[Snapshot] = []
         self.trades: List[Fill] = []
-        self._last_rebalance: Optional[datetime] = None
-        self.factors: List[Factor] = strategy.factors()
-        self.constructor: PortfolioConstructor = strategy.portfolio_constructor()
-        self.constraints = strategy.constraints()
 
-        max_lookback = max(
-            [getattr(f, 'lookback', 100) for f in self.factors] +
-            [strategy.warmup_periods(), 100]
+    def run_live(self, interval_seconds: int = 60, verbose: bool = True) -> None:
+        """Real-time trading loop.
+
+        Args:
+            interval_seconds: Seconds between each tick
+            verbose: Log progress
+        """
+        symbols = self.provider.symbols
+        if not symbols:
+            raise ValueError("DataProvider has no symbols loaded")
+
+        self.logger.info(
+            "Live trading started",
+            extra={
+                "mode": self.mode.value,
+                "symbols": symbols,
+                "interval_seconds": interval_seconds,
+                "warmup_periods": self.strategy.warmup_periods(),
+            },
         )
-        self.price_buffer = RollingPriceBuffer(max_periods=max_lookback + 50)
-        self.position_sync = PositionSynchronizer(tolerance=1e-6)
 
-        self.health_checker.register_component("engine")
-        self.health_checker.register_component("executor")
-        self.health_checker.register_component("data_store")
+        iteration = 0
 
-    def step(self, timestamp: datetime, prices: Dict[str, float]) -> ExecutionResult:
-        """Execute one trading step."""
-        if isinstance(self.data_store, LiveDataStore):
-            self.data_store.update(timestamp, prices)
+        try:
+            while not self.shutdown_handler.is_shutdown_requested():
+                timestamp = datetime.utcnow()
 
+                try:
+                    # Get prices from DataProvider
+                    prices = self.provider.current_prices()
+
+                    if not prices:
+                        self.logger.warning(
+                            "No prices available",
+                            extra={"timestamp": timestamp.isoformat()},
+                        )
+                        time.sleep(interval_seconds)
+                        continue
+
+                    # Process bar
+                    result = self._process_bar(timestamp, prices)
+
+                    # Log result
+                    if verbose:
+                        self._log_result(result, iteration)
+
+                except Exception as e:
+                    self.logger.error(
+                        "Error processing bar",
+                        extra={
+                            "timestamp": timestamp.isoformat(),
+                            "error": str(e),
+                        },
+                    )
+
+                iteration += 1
+                time.sleep(interval_seconds)
+
+        except KeyboardInterrupt:
+            self.logger.info("Live trading stopped by user")
+        finally:
+            self.logger.info(
+                "Live trading ended",
+                extra={
+                    "total_trades": len(self.trades),
+                    "final_equity": self.snapshots[-1].equity if self.snapshots else 0,
+                },
+            )
+
+    def _process_bar(self, timestamp: datetime, prices: Dict[str, float]) -> ExecutionResult:
+        """Process a single bar."""
+        # Record snapshot
         snapshot = self.portfolio.get_snapshot(timestamp, prices)
         self.snapshots.append(snapshot)
 
-        universe = self.strategy.universe()
-        if universe:
-            available = [s for s in universe if s in prices]
-        else:
-            available = list(prices.keys())
+        # Handle delisted positions
+        universe_symbols = self.provider.universe_symbols
+        self._liquidate_delisted(timestamp, universe_symbols, prices)
 
-        if not available:
-            return ExecutionResult(
-                timestamp=timestamp,
-                action="skip",
-                fills=[],
-                orders=[],
-                snapshot=snapshot,
-                rebalance_reason="no_symbols",
-            )
-
-        self._check_and_liquidate_delisted(timestamp, available, prices)
-
-        if not self._should_rebalance(timestamp):
+        # Check rebalance schedule
+        if not self.provider.should_rebalance():
             return ExecutionResult(
                 timestamp=timestamp,
                 action="skip",
@@ -98,33 +168,13 @@ class LiveEngine:
                 rebalance_reason="schedule",
             )
 
-        data = self.data_store.get_view(timestamp)
-        all_scores: Dict[str, float] = {}
+        # Mark rebalanced
+        self.provider.mark_rebalanced()
 
-        for factor in self.factors:
-            try:
-                scores = factor.compute(data)
-                for symbol, score in scores.items():
-                    if symbol in all_scores:
-                        all_scores[symbol] = (all_scores[symbol] + score) / 2
-                    else:
-                        all_scores[symbol] = score
-            except Exception:
-                continue
+        # Call strategy.on_bar()
+        weights = self.strategy.on_bar(timestamp=timestamp)
 
-        if not all_scores:
-            return ExecutionResult(
-                timestamp=timestamp,
-                action="skip",
-                fills=[],
-                orders=[],
-                snapshot=snapshot,
-                rebalance_reason="no_scores",
-            )
-
-        target_weights = self.constructor.construct(all_scores, self.constraints)
-
-        if not target_weights:
+        if not weights:
             return ExecutionResult(
                 timestamp=timestamp,
                 action="skip",
@@ -134,8 +184,8 @@ class LiveEngine:
                 rebalance_reason="no_weights",
             )
 
-        current_weights = self.portfolio.get_weights(prices)
-        orders = self._generate_orders(current_weights, target_weights, snapshot.equity, prices)
+        # Convert weights to orders
+        orders = self._weights_to_orders(weights, prices)
 
         if not orders:
             return ExecutionResult(
@@ -147,30 +197,16 @@ class LiveEngine:
                 rebalance_reason="no_orders",
             )
 
-        if self.risk_manager:
-            orders = self.risk_manager.apply_position_limits(
-                orders, self.portfolio.positions, prices, snapshot.equity
-            )
-
-        if not orders:
-            return ExecutionResult(
-                timestamp=timestamp,
-                action="skip",
-                fills=[],
-                orders=[],
-                snapshot=snapshot,
-                rebalance_reason="risk_filtered",
-            )
-
+        # Execute orders
         fills = self.executor.execute(orders, timestamp, prices)
 
+        # Apply fills
         for fill in fills:
             try:
                 self.portfolio.apply_fill(fill)
                 self.trades.append(fill)
             except ValueError as e:
-                self.logger.error("Fill rejected by portfolio", extra={"error": str(e), "fill": fill.symbol})
-                continue
+                self.logger.warning(f"Fill rejected: {e}")
 
         final_snapshot = self.portfolio.get_snapshot(timestamp, prices)
 
@@ -183,309 +219,78 @@ class LiveEngine:
             rebalance_reason="scheduled",
         )
 
-    def run_live(self, interval_seconds: int = 60, verbose: bool = True) -> None:
-        """Real-time trading loop."""
-        if not hasattr(self.executor, "fetch_prices"):
-            raise ValueError("Executor must have fetch_prices() for live trading")
-
-        universe = self.strategy.universe()
-        if not universe:
-            raise ValueError("Strategy must define universe() for live trading")
-
-        self.logger.info("Live trading started", extra={"mode": self.mode.value, "universe": universe, "interval_seconds": interval_seconds})
-        self.health_checker.update_component("engine", HealthStatus.HEALTHY, "Live trading running")
-
-        iteration = 0
-        position_sync_interval = max(10, 600 // interval_seconds)
-
-        try:
-            while not self.shutdown_handler.is_shutdown_requested():
-                timestamp = datetime.utcnow()
-
-                try:
-                    prices = self.executor.fetch_prices(universe)
-
-                    if not prices:
-                        self.logger.warning("No prices received from executor", extra={"timestamp": timestamp.isoformat()})
-                        time.sleep(interval_seconds)
-                        continue
-
-                    self._process_live_timestamp(timestamp, prices)
-
-                    if iteration % position_sync_interval == 0:
-                        self._check_position_sync(verbose)
-
-                    if hasattr(self.executor, 'cleanup_old_orders'):
-                        if iteration % 100 == 0:
-                            self.executor.cleanup_old_orders()
-
-                    if verbose:
-                        equity = self.snapshots[-1].equity if self.snapshots else 0
-                        self.logger.info("Live step completed", extra={"timestamp": timestamp.strftime('%H:%M:%S'), "equity": equity})
-
-                except KeyError as e:
-                    self.logger.error("Data access error during live step", extra={"error": str(e), "timestamp": timestamp.isoformat()})
-                except ValueError as e:
-                    self.logger.error("Value error during live step", extra={"error": str(e), "timestamp": timestamp.isoformat()})
-                except Exception as e:
-                    self.logger.error("Unexpected error during live step", extra={"error": str(e), "timestamp": timestamp.isoformat()})
-
-                iteration += 1
-                time.sleep(interval_seconds)
-
-        except KeyboardInterrupt:
-            self.logger.info("Live polling stopped by user")
-        finally:
-            self.health_checker.update_component("engine", HealthStatus.UNHEALTHY, "Engine stopped")
-            self.logger.info("Live polling cleanup completed")
-
-    async def run_stream(
-        self, stream: StreamingDataSource, verbose: bool = True
-    ) -> None:
-        """Real-time trading with streaming data."""
-        universe = self.strategy.universe()
-        if not universe:
-            raise ValueError("Strategy must define universe() for live trading")
-
-        self.logger.info("Streaming started", extra={"mode": self.mode.value, "universe": universe})
-
-        iteration = 0
-        position_sync_interval = 100
-
-        def on_tick(timestamp: datetime, prices: Dict[str, float]) -> None:
-            nonlocal iteration
-
-            try:
-                self._process_live_timestamp(timestamp, prices)
-
-                if iteration % position_sync_interval == 0:
-                    self._check_position_sync(verbose)
-
-                if hasattr(self.executor, 'cleanup_old_orders'):
-                    if iteration % 100 == 0:
-                        self.executor.cleanup_old_orders()
-
-                if verbose and iteration % 10 == 0:
-                    equity = self.snapshots[-1].equity if self.snapshots else 0
-                    self.logger.info("Stream step completed", extra={"timestamp": timestamp.strftime('%H:%M:%S'), "equity": equity})
-
-            except KeyError as e:
-                self.logger.error("Data access error during stream step", extra={"error": str(e), "timestamp": timestamp.isoformat()})
-            except ValueError as e:
-                self.logger.error("Value error during stream step", extra={"error": str(e), "timestamp": timestamp.isoformat()})
-            except Exception as e:
-                self.logger.error("Unexpected error during stream step", extra={"error": str(e), "timestamp": timestamp.isoformat()})
-
-            iteration += 1
-
-        try:
-            await stream.start(universe, on_tick)
-            while stream.is_running():
-                await asyncio.sleep(1)
-        except KeyboardInterrupt:
-            self.logger.info("Stopping stream by user request")
-        finally:
-            await stream.stop()
-            self.logger.info("Stream stopped")
-
-    def _should_rebalance(self, timestamp: datetime) -> bool:
-        schedule = self.strategy.schedule()
-
-        if schedule == "daily":
-            if self._last_rebalance is None or timestamp.date() != self._last_rebalance.date():
-                self._last_rebalance = timestamp
-                return True
-            return False
-
-        elif schedule == "weekly":
-            if self._last_rebalance is None:
-                self._last_rebalance = timestamp
-                return True
-
-            last_week = self._last_rebalance.isocalendar()[1]
-            current_week = timestamp.isocalendar()[1]
-
-            if current_week != last_week:
-                self._last_rebalance = timestamp
-                return True
-
-            return False
-
-        elif schedule == "monthly":
-            if self._last_rebalance is None:
-                self._last_rebalance = timestamp
-                return True
-
-            if timestamp.month != self._last_rebalance.month or timestamp.year != self._last_rebalance.year:
-                self._last_rebalance = timestamp
-                return True
-
-            return False
-
-        else:
-            raise ValueError(f"Unknown schedule: {schedule}")
-
-    def _process_live_timestamp(self, timestamp: datetime, prices: Dict[str, float]) -> None:
-        self.price_buffer.update(timestamp, prices)
-
-        snapshot = self.portfolio.get_snapshot(timestamp, prices)
-        self.snapshots.append(snapshot)
-
-        universe = self.strategy.universe()
-        if universe:
-            available = [s for s in universe if s in prices]
-        else:
-            available = list(prices.keys())
-
-        self._check_and_liquidate_delisted(timestamp, available, prices)
-
-        if self.risk_manager:
-            if self.risk_manager.check_max_drawdown(snapshot.equity):
-                self.logger.critical("Maximum drawdown limit exceeded, liquidating all positions", extra={"equity": snapshot.equity})
-                liquidate_orders = [
-                    Order(symbol=symbol, side=OrderSide.SELL, amount=pos.amount)
-                    for symbol, pos in self.portfolio.positions.items()
-                ]
-                fills = self.executor.execute(liquidate_orders, timestamp, prices)
-                for fill in fills:
-                    try:
-                        self.portfolio.apply_fill(fill)
-                        self.trades.append(fill)
-                    except ValueError as e:
-                        self.logger.error("Liquidation fill rejected", extra={"error": str(e), "fill": fill.symbol})
-                return
-
-            exit_orders = self.risk_manager.check_position_exits(
-                self.portfolio.positions, prices
-            )
-            if exit_orders:
-                fills = self.executor.execute(exit_orders, timestamp, prices)
-                for fill in fills:
-                    try:
-                        self.portfolio.apply_fill(fill)
-                        self.trades.append(fill)
-                    except ValueError as e:
-                        self.logger.error("Exit fill rejected", extra={"error": str(e), "fill": fill.symbol})
-
-        if not self._should_rebalance(timestamp):
-            return
-
-        warmup = self.strategy.warmup_periods()
-        if len(self.price_buffer.timestamps) < warmup:
-            return
-
-        data = LiveDataView(self.price_buffer, timestamp)
-        all_scores: Dict[str, float] = {}
-
-        for factor in self.factors:
-            try:
-                scores = factor.compute(data)
-                for symbol, score in scores.items():
-                    if symbol in all_scores:
-                        all_scores[symbol] = (all_scores[symbol] + score) / 2
-                    else:
-                        all_scores[symbol] = score
-            except Exception:
-                continue
-
-        if not all_scores:
-            return
-
-        target_weights = self.constructor.construct(all_scores, self.constraints)
-
-        if not target_weights:
-            return
-
-        current_weights = self.portfolio.get_weights(prices)
-        orders = self._generate_orders(current_weights, target_weights, snapshot.equity, prices)
-
-        if not orders:
-            return
-
-        if self.risk_manager:
-            orders = self.risk_manager.apply_position_limits(
-                orders, self.portfolio.positions, prices, snapshot.equity
-            )
-
-        if not orders:
-            return
-
-        fills = self.executor.execute(orders, timestamp, prices)
-
-        for fill in fills:
-            try:
-                self.portfolio.apply_fill(fill)
-                self.trades.append(fill)
-            except ValueError as e:
-                self.logger.error("Rebalance fill rejected", extra={"error": str(e), "fill": fill.symbol})
-
-    def _generate_orders(
+    def _weights_to_orders(
         self,
-        current_weights: Dict[str, float],
-        target_weights: Dict[str, float],
-        equity: float,
+        weights: Dict[str, float],
         prices: Dict[str, float],
     ) -> List[Order]:
+        """Convert target weights to orders."""
         orders = []
-        all_symbols = sorted(set(current_weights.keys()) | set(target_weights.keys()))
-        sells = []
-        buys = []
+        equity = self.portfolio.equity(prices)
 
-        fee_reserve_factor = 1.0 - 0.002
+        # Reserve for fees
+        fee_reserve = 0.998
 
-        for symbol in all_symbols:
+        for symbol, target_weight in weights.items():
             if symbol not in prices:
                 continue
 
-            current_weight = current_weights.get(symbol, 0.0)
-            target_weight = target_weights.get(symbol, 0.0)
-            weight_diff = target_weight - current_weight
+            price = prices[symbol]
+            target_value = equity * target_weight * fee_reserve
+            target_amount = target_value / price
 
-            if abs(weight_diff) < 1e-6:
+            current_amount = 0.0
+            if symbol in self.portfolio.positions:
+                current_amount = self.portfolio.positions[symbol].amount
+
+            delta = target_amount - current_amount
+
+            if abs(delta) < 1e-8:
                 continue
 
-            if weight_diff > 0:
-                target_value = target_weight * equity * fee_reserve_factor
+            if delta > 0:
+                orders.append(Order(symbol=symbol, side=OrderSide.BUY, amount=delta))
             else:
-                target_value = target_weight * equity
+                orders.append(Order(symbol=symbol, side=OrderSide.SELL, amount=abs(delta)))
 
-            target_amount = target_value / prices[symbol] if prices[symbol] > 0 else 0.0
-            current_value = current_weight * equity
-            current_amount = current_value / prices[symbol] if prices[symbol] > 0 else 0.0
-            amount_diff = target_amount - current_amount
+        # Sells first, then buys
+        sells = [o for o in orders if o.side == OrderSide.SELL]
+        buys = [o for o in orders if o.side == OrderSide.BUY]
 
-            if abs(amount_diff) < 1e-8:
-                continue
+        return sells + buys
 
-            if amount_diff > 0:
-                order = Order(symbol=symbol, side=OrderSide.BUY, amount=amount_diff)
-                buys.append(order)
-            else:
-                order = Order(symbol=symbol, side=OrderSide.SELL, amount=abs(amount_diff))
-                sells.append(order)
-
-        orders = sells + buys
-        return orders
-
-    def _check_and_liquidate_delisted(
-        self, timestamp: datetime, available: List[str], prices: Dict[str, float]
+    def _liquidate_delisted(
+        self,
+        timestamp: datetime,
+        available: List[str],
+        prices: Dict[str, float],
     ) -> None:
+        """Liquidate positions in delisted symbols."""
         if not self.portfolio.positions:
             return
 
+        available_set = set(available)
         delisted = [
-            symbol for symbol in self.portfolio.positions.keys()
-            if symbol not in available
+            symbol
+            for symbol in self.portfolio.positions.keys()
+            if symbol not in available_set
         ]
 
         if not delisted:
             return
 
         orders = [
-            Order(symbol=symbol, side=OrderSide.SELL, amount=pos.amount)
-            for symbol, pos in self.portfolio.positions.items()
-            if symbol in delisted
+            Order(
+                symbol=symbol,
+                side=OrderSide.SELL,
+                amount=abs(self.portfolio.positions[symbol].amount),
+            )
+            for symbol in delisted
+            if symbol in prices
         ]
+
+        if not orders:
+            return
 
         fills = self.executor.execute(orders, timestamp, prices)
 
@@ -493,43 +298,45 @@ class LiveEngine:
             try:
                 self.portfolio.apply_fill(fill)
                 self.trades.append(fill)
+                self.logger.info(f"Liquidated delisted: {fill.symbol}")
             except ValueError as e:
-                self.logger.error("Delisted liquidation failed", extra={"error": str(e), "fill": fill.symbol})
+                self.logger.error(f"Failed to liquidate {fill.symbol}: {e}")
 
-    def _check_position_sync(self, verbose: bool = False) -> None:
-        if not hasattr(self.executor, 'fetch_positions'):
-            return
+    def _log_result(self, result: ExecutionResult, iteration: int) -> None:
+        """Log execution result."""
+        ts_str = result.timestamp.strftime('%H:%M:%S')
 
-        try:
-            exchange_positions = self.executor.fetch_positions()
-            discrepancies = self.position_sync.check_discrepancies(
-                self.portfolio.positions, exchange_positions
+        if result.action == "rebalance":
+            self.logger.info(
+                f"[{ts_str}] REBALANCE",
+                extra={
+                    "fills": len(result.fills),
+                    "equity": f"{result.snapshot.equity:.2f}",
+                    "positions": result.snapshot.num_positions,
+                },
             )
 
-            critical = [d for d in discrepancies if d.is_critical]
-            if critical:
-                self.logger.warning(
-                    "Position discrepancies detected",
-                    extra={
-                        "count": len(critical),
-                        "discrepancies": [
-                            {
-                                "symbol": d.symbol,
-                                "internal": d.internal_amount,
-                                "exchange": d.exchange_amount,
-                                "diff": d.amount_diff
-                            }
-                            for d in critical
-                        ]
-                    }
+            for fill in result.fills:
+                side = "BUY" if fill.side == OrderSide.BUY else "SELL"
+                self.logger.info(
+                    f"  {side} {fill.symbol}: {fill.amount:.6f} @ ${fill.price:,.2f}",
                 )
 
-        except Exception as e:
-            self.logger.error("Position sync check failed", extra={"error": str(e)})
+        elif iteration % 10 == 0:
+            self.logger.info(
+                f"[{ts_str}] skip ({result.rebalance_reason})",
+                extra={"equity": f"{result.snapshot.equity:.2f}"},
+            )
 
     def reset(self) -> None:
+        """Reset engine state."""
         self.portfolio.reset()
         self.snapshots.clear()
         self.trades.clear()
-        self._last_rebalance = None
-        self.price_buffer.clear()
+
+    def __repr__(self) -> str:
+        return (
+            f"LiveEngine("
+            f"strategy={self.strategy.name}, "
+            f"mode={self.mode.value})"
+        )

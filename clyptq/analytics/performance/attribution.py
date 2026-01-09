@@ -193,30 +193,3 @@ class PerformanceAttributor:
             ))
 
         return attributions
-
-
-def print_attribution_results(result: AttributionResult) -> None:
-    """Print attribution results."""
-    print("=" * 70)
-    print("PERFORMANCE ATTRIBUTION")
-    print("=" * 70)
-
-    print(f"\nTotal Return: {result.total_return:>10.2%}")
-
-    print(f"\nCost Components:")
-    print(f"  Transaction Costs: {result.transaction_cost_drag:>10.2%}")
-    print(f"  Cash Drag:         {result.cash_drag:>10.2%}")
-
-    if result.asset_attributions:
-        print(f"\nAsset Attribution (Top 10):")
-        sorted_assets = sorted(
-            result.asset_attributions,
-            key=lambda x: abs(x.weight_contribution),
-            reverse=True
-        )[:10]
-
-        for aa in sorted_assets:
-            print(f"  {aa.symbol:12} Return: {aa.total_return:>8.2%}  "
-                  f"Contrib: {aa.weight_contribution:>8.2%}")
-
-    print("\n" + "=" * 70)

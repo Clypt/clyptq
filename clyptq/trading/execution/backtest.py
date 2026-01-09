@@ -3,8 +3,8 @@
 from datetime import datetime
 from typing import Dict, List
 
-from clyptq.trading.risk.costs import apply_slippage, calculate_fee
-from clyptq.core.base import Executor
+from clyptq.trading.execution.costs import apply_slippage, calculate_fee
+from clyptq.trading.execution.base import Executor
 from clyptq.core.types import CostModel, Fill, FillStatus, Order
 
 

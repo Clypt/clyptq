@@ -86,8 +86,22 @@ backtest_results/
 live_trades/
 TODO.md
 CLAUDE.md
-*.json
 *PLAN.md
 docs/
 .serena/
 CHANGELOG.md
+
+# Data directories
+/data/                       # Downloaded market data (OHLCV)
+
+# User data - keep structure but ignore results/logs
+/user_data/backtest/results/
+/user_data/backtest/logs/
+/user_data/live/results/
+/user_data/live/logs/
+/user_data/paper/results/
+/user_data/paper/logs/
+# Keep these
+!/user_data/strategies/
+!/user_data/README.md
+!**/.gitkeep

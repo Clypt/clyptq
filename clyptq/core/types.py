@@ -23,6 +23,19 @@ class EngineMode(Enum):
     LIVE = "live"
 
 
+class CombinationWarningLevel(Enum):
+    """Alpha combination universe alignment warning level.
+
+    - SAFE: N+N or n+n (same universe) - safe combination
+    - CAUTION: N+n (masking required) - caution, auto-masking applied
+    - CRITICAL: n1+n2 (different universes) - risky, low result reliability
+    """
+
+    SAFE = "safe"
+    CAUTION = "caution"
+    CRITICAL = "critical"
+
+
 class OrderSide(Enum):
     """Order side (buy or sell)."""
 
@@ -260,9 +273,14 @@ class BacktestResult:
         return json.dumps(self.to_dict(), indent=indent)
 
 
-# ============================================================================
-# Configuration Types
-# ============================================================================
+
+
+class MarketType(Enum):
+    """Market type for trading."""
+
+    SPOT = "spot"
+    FUTURES = "futures"
+    MARGIN = "margin"
 
 
 @dataclass
@@ -270,7 +288,7 @@ class Constraints:
     """Portfolio construction constraints."""
 
     max_position_size: float = 0.2  # Max 20% per position
-    max_gross_exposure: float = 1.0  # Max 100% invested
+    max_gross_exposure: float = 1.0  # Max 100% invested (before leverage)
     min_position_size: float = 0.01  # Min 1% per position
     max_num_positions: int = 20  # Max number of positions
     allow_short: bool = False  # Allow short positions
@@ -283,6 +301,8 @@ class CostModel:
     maker_fee: float = 0.001  # 0.1% maker fee
     taker_fee: float = 0.001  # 0.1% taker fee
     slippage_bps: float = 5.0  # 5 bps slippage
+    # Futures-specific
+    funding_rate: float = 0.0001  # 0.01% funding rate (8h)
 
 
 @dataclass
@@ -290,10 +310,22 @@ class EngineConfig:
     """Engine configuration."""
 
     mode: EngineMode
+    market_type: MarketType = MarketType.SPOT
     initial_capital: float = 10000.0
+    leverage: float = 1.0  # 1x for spot, up to 20x+ for futures
     cost_model: CostModel = field(default_factory=CostModel)
     constraints: Constraints = field(default_factory=Constraints)
     rebalance_schedule: str = "daily"  # "daily", "weekly", "monthly"
+
+    def __post_init__(self):
+        """Validate configuration."""
+        if self.market_type == MarketType.SPOT and self.leverage != 1.0:
+            raise ValueError("Spot market does not support leverage (must be 1.0)")
+        if self.leverage < 1.0:
+            raise ValueError(f"Leverage must be >= 1.0, got {self.leverage}")
+        # Enable short for futures by default
+        if self.market_type == MarketType.FUTURES:
+            self.constraints.allow_short = True
 
 
 @dataclass
@@ -379,6 +411,39 @@ class CacheStats:
         """Calculate current hit rate."""
         total = self.hits + self.misses
         self.hit_rate = self.hits / total if total > 0 else 0.0
+
+
+@dataclass
+class AlphaMetadata:
+    """Alpha universe info and metadata.
+
+    Tracks universe scope information used in Pasteurize strategy.
+
+    Attributes:
+        input_universe: Alpha computation scope ("GLOBAL" = all symbols, "LOCAL" = target universe only)
+        output_scope: Output scope ("GLOBAL" = full output, "FILTERED" = universe filtered)
+        is_truncated: Whether truncated by top-n etc.
+        universe_id: Universe identifier (e.g., "TOP3000", "SP500")
+    """
+
+    input_universe: str = "GLOBAL"
+    output_scope: str = "GLOBAL"
+    is_truncated: bool = False
+    universe_id: str = "ALL"
+
+    def __post_init__(self) -> None:
+        """Validate metadata fields."""
+        valid_input = {"GLOBAL", "LOCAL"}
+        valid_output = {"GLOBAL", "FILTERED"}
+
+        if self.input_universe not in valid_input:
+            raise ValueError(
+                f"input_universe must be one of {valid_input}, got '{self.input_universe}'"
+            )
+        if self.output_scope not in valid_output:
+            raise ValueError(
+                f"output_scope must be one of {valid_output}, got '{self.output_scope}'"
+            )
 
 
 @dataclass

@@ -1,3 +1,35 @@
+"""
+clyptq - Quantitative Trading Framework
+
+Usage:
+    ```python
+    from clyptq import Strategy, Engine, operator
+    from clyptq.universe import DynamicUniverse
+    from clyptq.data.spec import OHLCVSpec
+
+    class MyStrategy(Strategy):
+        universe = DynamicUniverse(symbols=["BTC", "ETH"])
+        data = {"ohlcv": OHLCVSpec(timeframe="1h")}
+        rebalance_freq = "1d"
+
+        def compute_signal(self):
+            return operator.rank(self.provider["close"])
+
+        def warmup_periods(self) -> int:
+            return 50
+
+    # Run backtest
+    engine = Engine()
+    result = engine.run(
+        MyStrategy(),
+        mode="backtest",
+        data_path="data/crypto/",
+        start=datetime(2023, 1, 1),
+        end=datetime(2024, 1, 1),
+    )
+    ```
+"""
+
 __version__ = "1.0.0"
 
 from clyptq.core.types import (
@@ -9,27 +41,35 @@ from clyptq.core.types import (
     Fill,
     Order,
 )
-from clyptq.trading.engine import BacktestEngine, LiveEngine
-from clyptq.trading.execution import BacktestExecutor, LiveExecutor
-from clyptq.trading.strategy.base import SimpleStrategy
-from clyptq.trading.strategy.blender import StrategyBlender
-from clyptq.trading.strategy.adaptive import AdaptiveStrategy
-from clyptq.trading.portfolio.constructors import (
-    TopNConstructor,
-    ScoreWeightedConstructor,
-    RiskParityConstructor,
-    BlendedConstructor,
+
+# Engine (main interface)
+from clyptq.trading.engine import Engine
+
+# Strategy classes
+from clyptq.strategy.base import Strategy
+
+# Transforms
+from clyptq.strategy.transform import BaseTransform
+
+# Data specs
+from clyptq.data.spec import OHLCVSpec, OrderBookSpec, FundingSpec
+
+# Global operators
+from clyptq import operator
+
+# Universe
+from clyptq import universe
+from clyptq.universe import (
+    Universe,
+    BaseFilter,
+    StaticUniverse,
+    DynamicUniverse,
 )
-from clyptq.trading.portfolio.mean_variance import MeanVarianceConstructor
-from clyptq.trading.portfolio.risk_budget import RiskBudgetConstructor
-from clyptq.data.stores.store import DataStore
-from clyptq.data.stores.live_store import LiveDataStore
-from clyptq.data.loaders.ccxt import load_crypto_data
+# Legacy alias
+BaseUniverse = Universe
 
 __all__ = [
-    # Version
     "__version__",
-    # Core Types
     "EngineMode",
     "Constraints",
     "CostModel",
@@ -37,25 +77,17 @@ __all__ = [
     "Position",
     "Fill",
     "Order",
-    # Engines
-    "BacktestEngine",
-    "LiveEngine",
-    # Executors
-    "BacktestExecutor",
-    "LiveExecutor",
-    # Strategies
-    "SimpleStrategy",
-    "StrategyBlender",
-    "AdaptiveStrategy",
-    # Portfolio Constructors
-    "TopNConstructor",
-    "ScoreWeightedConstructor",
-    "RiskParityConstructor",
-    "BlendedConstructor",
-    "MeanVarianceConstructor",
-    "RiskBudgetConstructor",
-    # Data
-    "DataStore",
-    "LiveDataStore",
-    "load_crypto_data",
+    "Engine",
+    "Strategy",
+    "BaseTransform",
+    "OHLCVSpec",
+    "OrderBookSpec",
+    "FundingSpec",
+    "operator",
+    "universe",
+    "Universe",
+    "BaseFilter",
+    "BaseUniverse",  # Legacy alias
+    "StaticUniverse",
+    "DynamicUniverse",
 ]

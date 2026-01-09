@@ -2,19 +2,15 @@
 
 from clyptq.trading.engine import BacktestEngine, LiveEngine
 from clyptq.trading.execution import BacktestExecutor, LiveExecutor
-from clyptq.trading.strategy.base import SimpleStrategy
-from clyptq.trading.strategy.blender import StrategyBlender
-from clyptq.trading.portfolio.constructors import (
-    TopNConstructor,
-    ScoreWeightedConstructor,
-    RiskParityConstructor,
-    BlendedConstructor,
-)
-from clyptq.trading.portfolio.state import PortfolioState
-from clyptq.trading.risk.costs import CostModel
-from clyptq.trading.risk.manager import RiskManager
+from clyptq.strategy.base import Strategy
+from clyptq.core.types import CostModel
+
+# Operators module shortcut
+from clyptq import operator
 
 __all__ = [
+    # Operators
+    "operator",
     # Engines
     "BacktestEngine",
     "LiveEngine",
@@ -22,15 +18,7 @@ __all__ = [
     "BacktestExecutor",
     "LiveExecutor",
     # Strategies
-    "SimpleStrategy",
-    "StrategyBlender",
-    # Portfolio
-    "TopNConstructor",
-    "ScoreWeightedConstructor",
-    "RiskParityConstructor",
-    "BlendedConstructor",
-    "PortfolioState",
-    # Risk
+    "Strategy",
+    # Cost
     "CostModel",
-    "RiskManager",
 ]

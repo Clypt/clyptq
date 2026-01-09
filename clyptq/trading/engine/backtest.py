@@ -1,4 +1,9 @@
-"""Backtest engine for historical simulation."""
+"""
+Backtest engine for historical simulation.
+
+BacktestEngine processes bar events using DataProvider for unified data access.
+Uses Strategy.on_bar() with DataProvider (same interface as Research/Live).
+"""
 
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -6,71 +11,188 @@ from typing import Dict, List, Optional
 import pandas as pd
 
 from clyptq.analytics.performance.metrics import compute_metrics
-from clyptq.core.base import Executor, Factor, PortfolioConstructor, Strategy
+from clyptq.trading.execution.base import Executor
 from clyptq.core.types import BacktestResult, EngineMode, Fill, Order, OrderSide, Snapshot
-from clyptq.data.stores.store import DataStore
-from clyptq.trading.portfolio.state import PortfolioState
-from clyptq.trading.risk.manager import RiskManager
 from clyptq.infra.utils import get_logger
+from clyptq.trading.portfolio.state import PortfolioState, FuturesPortfolioState
+from clyptq.strategy.base import Strategy
+
+# Market type literal
+MarketType = str  # "spot", "futures", "margin"
 
 
 class BacktestEngine:
-    """Event-driven backtesting engine."""
+    """Event-driven backtesting engine.
+
+    This engine processes timestamps sequentially, calling strategy.on_bar()
+    at each bar. Uses DataProvider for unified data access (same as Research/Live).
+
+    Supports:
+    - Spot trading (leverage=1, long only)
+    - Futures trading (leverage 1-125x, long/short)
+
+    Example:
+        ```python
+        # Spot backtest
+        engine = BacktestEngine(
+            strategy=strategy,
+            executor=BacktestExecutor(cost_model),
+            initial_capital=100000.0,
+        )
+
+        # Futures backtest with 10x leverage
+        engine = BacktestEngine(
+            strategy=strategy,
+            executor=BacktestExecutor(cost_model),
+            initial_capital=10000.0,
+            market_type="futures",
+            leverage=10.0,
+        )
+
+        result = engine.run(verbose=True)
+        print(f"Total Return: {result.metrics.total_return:.2%}")
+        ```
+
+    Attributes:
+        strategy: Trading strategy to backtest
+        provider: DataProvider (from strategy.provider)
+        executor: Order executor
+        portfolio: Portfolio state (PortfolioState or FuturesPortfolioState)
+        market_type: "spot" or "futures"
+        leverage: Leverage multiplier (1.0 for spot)
+        snapshots: List of portfolio snapshots
+        trades: List of executed trades
+    """
 
     def __init__(
         self,
         strategy: Strategy,
-        data_store: DataStore,
         executor: Executor,
         initial_capital: float = 10000.0,
-        risk_manager: Optional[RiskManager] = None,
+        market_type: MarketType = "spot",
+        leverage: float = 1.0,
     ):
+        """Initialize BacktestEngine.
+
+        Args:
+            strategy: Strategy to backtest (must have loaded provider)
+            executor: Order executor
+            initial_capital: Starting capital
+            market_type: "spot" or "futures"
+            leverage: Leverage for futures (1.0 for spot)
+        """
         self.strategy = strategy
-        self.data_store = data_store
+        self.provider = strategy.provider  # Get from strategy
         self.executor = executor
-        self.logger = get_logger(__name__, context={"strategy": strategy.__class__.__name__, "mode": "backtest"})
-        self.portfolio = PortfolioState(initial_capital)
-        self.risk_manager = risk_manager
+        self.market_type = market_type
+        self.leverage = leverage
+
+        # Validate
+        if market_type == "spot" and leverage != 1.0:
+            raise ValueError("Spot market does not support leverage (must be 1.0)")
+        if leverage < 1.0:
+            raise ValueError(f"Leverage must be >= 1.0, got {leverage}")
+
+        # Create appropriate portfolio
+        if market_type == "futures":
+            self.portfolio = FuturesPortfolioState(initial_capital, leverage)
+        else:
+            self.portfolio = PortfolioState(initial_capital)
+
+        self.logger = get_logger(
+            __name__,
+            context={
+                "strategy": strategy.name,
+                "mode": "backtest",
+                "market_type": market_type,
+                "leverage": leverage,
+            },
+        )
+
         self.snapshots: List[Snapshot] = []
         self.trades: List[Fill] = []
-        self._last_rebalance: Optional[datetime] = None
-        self.factors: List[Factor] = strategy.factors()
-        self.constructor: PortfolioConstructor = strategy.portfolio_constructor()
-        self.constraints = strategy.constraints()
 
-    def run(
-        self, start: datetime, end: datetime, verbose: bool = False
-    ) -> BacktestResult:
-        """Run backtest from start to end."""
-        timestamps = self._get_timestamps(start, end)
+    def run(self, verbose: bool = False) -> BacktestResult:
+        """Run backtest.
 
-        self.logger.info("Backtest started", extra={"start": start.isoformat(), "end": end.isoformat(), "timestamps": len(timestamps)})
+        Provider must already be loaded with data.
+
+        Args:
+            verbose: Print progress updates
+
+        Returns:
+            BacktestResult with performance metrics
+        """
+        if not self.provider._loaded:
+            raise RuntimeError(
+                "DataProvider not loaded. Call provider.load() before engine.run()"
+            )
 
         warmup = self.strategy.warmup_periods()
 
-        for i, timestamp in enumerate(timestamps):
-            if i < warmup:
-                continue
+        self.logger.info(
+            "Backtest started",
+            extra={
+                "symbols": len(self.provider.symbols),
+                "warmup": warmup,
+                "system_clock": self.provider.system_clock,
+                "rebalance_freq": self.provider.rebalance_freq,
+            },
+        )
+
+        bar_count = 0
+        warmup_done = False
+
+        # Main tick loop using DataProvider
+        while self.provider.tick():
+            bar_count += 1
+
+            # Skip warmup period
+            if not warmup_done:
+                if bar_count < warmup:
+                    continue
+                warmup_done = True
 
             try:
-                self._process_timestamp(timestamp)
+                self._process_bar()
 
-                if verbose and (i % 100 == 0 or i == len(timestamps) - 1):
-                    pct = (i + 1) / len(timestamps) * 100
-                    self.logger.info("Backtest progress", extra={"progress": f"{i+1}/{len(timestamps)}", "percent": pct})
+                if verbose and bar_count % 100 == 0:
+                    equity = self.snapshots[-1].equity if self.snapshots else 0
+                    self.logger.info(
+                        "Progress",
+                        extra={
+                            "bar": bar_count,
+                            "timestamp": self.provider.current_timestamp.isoformat(),
+                            "equity": f"{equity:.2f}",
+                        },
+                    )
 
-            except KeyError as e:
-                self.logger.error("Data access error during backtest", extra={"timestamp": timestamp.isoformat(), "error": str(e)})
-                continue
-            except ValueError as e:
-                self.logger.error("Value error during backtest", extra={"timestamp": timestamp.isoformat(), "error": str(e)})
-                continue
             except Exception as e:
-                self.logger.error("Unexpected error during backtest", extra={"timestamp": timestamp.isoformat(), "error": str(e)})
+                self.logger.error(
+                    "Error processing bar",
+                    extra={
+                        "timestamp": self.provider.current_timestamp.isoformat(),
+                        "error": str(e),
+                    },
+                )
                 continue
 
-        metrics = compute_metrics(self.snapshots, self.trades)
-        self.logger.info("Backtest completed", extra={"total_trades": len(self.trades), "final_equity": self.snapshots[-1].equity if self.snapshots else 0})
+        # Compute final metrics
+        if not self.snapshots:
+            self.logger.warning("No snapshots generated during backtest")
+            metrics = self._empty_metrics()
+        else:
+            metrics = compute_metrics(self.snapshots, self.trades)
+
+        self.logger.info(
+            "Backtest completed",
+            extra={
+                "total_bars": bar_count,
+                "total_trades": len(self.trades),
+                "final_equity": self.snapshots[-1].equity if self.snapshots else 0,
+                "total_return": f"{metrics.total_return:.2%}" if metrics else "N/A",
+            },
+        )
 
         return BacktestResult(
             snapshots=self.snapshots,
@@ -80,17 +202,164 @@ class BacktestEngine:
             mode=EngineMode.BACKTEST,
         )
 
+    def _process_bar(self) -> None:
+        """Process a single bar."""
+        timestamp = self.provider.current_timestamp
+
+        # Get current prices from DataProvider
+        prices = self.provider.current_prices()
+        if not prices:
+            return
+
+        # Record snapshot
+        snapshot = self.portfolio.get_snapshot(timestamp, prices)
+        self.snapshots.append(snapshot)
+
+        # Handle delisted positions
+        universe_symbols = self.provider.universe_symbols
+        self._liquidate_delisted(timestamp, universe_symbols, prices)
+
+        # Check rebalance schedule
+        if not self.provider.should_rebalance():
+            return
+
+        # Mark rebalanced (updates in_universe)
+        self.provider.mark_rebalanced()
+
+        # Call strategy.on_bar()
+        weights = self.strategy.on_bar(timestamp=timestamp)
+
+        if not weights:
+            return
+
+        # Convert weights to orders
+        orders = self._weights_to_orders(weights, prices)
+
+        if not orders:
+            return
+
+        # Sort orders: SELL first (to free up cash), then BUY
+        sell_orders = [o for o in orders if o.side == OrderSide.SELL]
+        buy_orders = [o for o in orders if o.side == OrderSide.BUY]
+        sorted_orders = sell_orders + buy_orders
+
+        # Execute orders
+        fills = self.executor.execute(sorted_orders, timestamp, prices)
+
+        # Apply fills
+        for fill in fills:
+            try:
+                self.portfolio.apply_fill(fill)
+                self.trades.append(fill)
+            except ValueError as e:
+                self.logger.warning(f"Fill rejected: {e}")
+
+    def _weights_to_orders(
+        self,
+        weights: Dict[str, float],
+        prices: Dict[str, float],
+    ) -> List[Order]:
+        """Convert target weights to orders.
+
+        Args:
+            weights: Target weights {symbol: weight}
+            prices: Current prices {symbol: price}
+
+        Returns:
+            List of orders to reach target weights
+        """
+        orders = []
+        equity = self.portfolio.equity(prices)
+
+        for symbol, target_weight in weights.items():
+            if symbol not in prices:
+                continue
+
+            price = prices[symbol]
+            target_value = equity * target_weight
+            target_amount = target_value / price
+
+            current_amount = 0.0
+            if symbol in self.portfolio.positions:
+                current_amount = self.portfolio.positions[symbol].amount
+
+            delta = target_amount - current_amount
+
+            if abs(delta) < 1e-8:
+                continue
+
+            if delta > 0:
+                orders.append(Order(symbol=symbol, side=OrderSide.BUY, amount=delta))
+            else:
+                orders.append(Order(symbol=symbol, side=OrderSide.SELL, amount=abs(delta)))
+
+        return orders
+
+    def _liquidate_delisted(
+        self,
+        timestamp: datetime,
+        available: List[str],
+        prices: Dict[str, float],
+    ) -> None:
+        """Liquidate positions in delisted symbols."""
+        if not self.portfolio.positions:
+            return
+
+        available_set = set(available)
+        delisted = [
+            symbol
+            for symbol in self.portfolio.positions.keys()
+            if symbol not in available_set
+        ]
+
+        if not delisted:
+            return
+
+        orders = [
+            Order(
+                symbol=symbol,
+                side=OrderSide.SELL,
+                amount=abs(self.portfolio.positions[symbol].amount),
+            )
+            for symbol in delisted
+            if symbol in prices
+        ]
+
+        if not orders:
+            return
+
+        fills = self.executor.execute(orders, timestamp, prices)
+
+        for fill in fills:
+            try:
+                self.portfolio.apply_fill(fill)
+                self.trades.append(fill)
+                self.logger.info(f"Liquidated delisted: {fill.symbol}")
+            except ValueError as e:
+                self.logger.error(f"Failed to liquidate {fill.symbol}: {e}")
+
     def run_monte_carlo(
         self,
         num_simulations: int = 1000,
         random_seed: Optional[int] = None,
         verbose: bool = False,
     ):
-        """Run Monte Carlo simulation on current backtest results."""
+        """Run Monte Carlo simulation on backtest results.
+
+        Must call run() first to generate backtest results.
+
+        Args:
+            num_simulations: Number of Monte Carlo paths
+            random_seed: Random seed for reproducibility
+            verbose: Print results
+
+        Returns:
+            MonteCarloResult with simulation statistics
+        """
         from clyptq.analytics.risk.monte_carlo import MonteCarloSimulator
 
         if not self.snapshots:
-            raise ValueError("No backtest results available. Run run() first.")
+            raise ValueError("No backtest results. Call run() first.")
 
         metrics = compute_metrics(self.snapshots, self.trades)
         backtest_result = BacktestResult(
@@ -101,15 +370,15 @@ class BacktestEngine:
             mode=EngineMode.BACKTEST,
         )
 
-        if verbose:
-            print(f"Running {num_simulations} Monte Carlo simulations...")
-
         simulator = MonteCarloSimulator(
             num_simulations=num_simulations,
             random_seed=random_seed,
         )
 
-        result = simulator.run(backtest_result, initial_capital=self.portfolio.initial_cash)
+        result = simulator.run(
+            backtest_result,
+            initial_capital=self.portfolio.initial_cash,
+        )
 
         if verbose:
             from clyptq.analytics.risk.monte_carlo import print_monte_carlo_results
@@ -118,200 +387,39 @@ class BacktestEngine:
 
         return result
 
-    def _get_timestamps(self, start: datetime, end: datetime) -> List[datetime]:
-        schedule = self.strategy.schedule()
+    def _empty_metrics(self):
+        """Create empty metrics when no trades occurred."""
+        from clyptq.core.types import PerformanceMetrics
 
-        if schedule == "daily":
-            return pd.date_range(start, end, freq="D").to_pydatetime().tolist()
-        elif schedule == "weekly":
-            return pd.date_range(start, end, freq="W-MON").to_pydatetime().tolist()
-        elif schedule == "monthly":
-            return pd.date_range(start, end, freq="MS").to_pydatetime().tolist()
-        else:
-            raise ValueError(f"Unknown schedule: {schedule}")
-
-    def _should_rebalance(self, timestamp: datetime) -> bool:
-        schedule = self.strategy.schedule()
-
-        if schedule == "daily":
-            if self._last_rebalance is None or timestamp.date() != self._last_rebalance.date():
-                self._last_rebalance = timestamp
-                return True
-            return False
-
-        elif schedule == "weekly":
-            if self._last_rebalance is None:
-                self._last_rebalance = timestamp
-                return True
-
-            last_week = self._last_rebalance.isocalendar()[1]
-            current_week = timestamp.isocalendar()[1]
-
-            if current_week != last_week:
-                self._last_rebalance = timestamp
-                return True
-
-            return False
-
-        elif schedule == "monthly":
-            if self._last_rebalance is None:
-                self._last_rebalance = timestamp
-                return True
-
-            if timestamp.month != self._last_rebalance.month or timestamp.year != self._last_rebalance.year:
-                self._last_rebalance = timestamp
-                return True
-
-            return False
-
-        else:
-            raise ValueError(f"Unknown schedule: {schedule}")
-
-    def _process_timestamp(self, timestamp: datetime) -> None:
-        data = self.data_store.get_view(timestamp)
-
-        universe = self.strategy.universe()
-        if universe:
-            available = [s for s in universe if s in data.symbols]
-        else:
-            available = self.data_store.available_symbols(timestamp)
-
-        if not available:
-            return
-
-        prices = data.current_prices()
-        snapshot = self.portfolio.get_snapshot(timestamp, prices)
-        self.snapshots.append(snapshot)
-
-        self._check_and_liquidate_delisted(timestamp, available, prices)
-
-        if not self._should_rebalance(timestamp):
-            return
-
-        all_scores: Dict[str, float] = {}
-
-        for factor in self.factors:
-            try:
-                scores = factor.compute(data)
-                for symbol, score in scores.items():
-                    if symbol in all_scores:
-                        all_scores[symbol] = (all_scores[symbol] + score) / 2
-                    else:
-                        all_scores[symbol] = score
-            except Exception:
-                continue
-
-        if not all_scores:
-            return
-
-        target_weights = self.constructor.construct(all_scores, self.constraints)
-
-        if not target_weights:
-            return
-
-        current_weights = self.portfolio.get_weights(prices)
-        orders = self._generate_orders(current_weights, target_weights, snapshot.equity, prices)
-
-        if not orders:
-            return
-
-        if self.risk_manager:
-            orders = self.risk_manager.apply_position_limits(
-                orders, self.portfolio.positions, prices, snapshot.equity
-            )
-
-        if not orders:
-            return
-
-        fills = self.executor.execute(orders, timestamp, prices)
-
-        for fill in fills:
-            try:
-                self.portfolio.apply_fill(fill)
-                self.trades.append(fill)
-            except ValueError as e:
-                print(f"Fill rejected: {e}")
-                continue
-
-    def _generate_orders(
-        self,
-        current_weights: Dict[str, float],
-        target_weights: Dict[str, float],
-        equity: float,
-        prices: Dict[str, float],
-    ) -> List[Order]:
-        orders = []
-        all_symbols = sorted(set(current_weights.keys()) | set(target_weights.keys()))
-        sells = []
-        buys = []
-
-        fee_reserve_factor = 1.0 - 0.002
-
-        for symbol in all_symbols:
-            if symbol not in prices:
-                continue
-
-            current_weight = current_weights.get(symbol, 0.0)
-            target_weight = target_weights.get(symbol, 0.0)
-            weight_diff = target_weight - current_weight
-
-            if abs(weight_diff) < 1e-6:
-                continue
-
-            if weight_diff > 0:
-                target_value = target_weight * equity * fee_reserve_factor
-            else:
-                target_value = target_weight * equity
-
-            target_amount = target_value / prices[symbol] if prices[symbol] > 0 else 0.0
-            current_value = current_weight * equity
-            current_amount = current_value / prices[symbol] if prices[symbol] > 0 else 0.0
-            amount_diff = target_amount - current_amount
-
-            if abs(amount_diff) < 1e-8:
-                continue
-
-            if amount_diff > 0:
-                order = Order(symbol=symbol, side=OrderSide.BUY, amount=amount_diff)
-                buys.append(order)
-            else:
-                order = Order(symbol=symbol, side=OrderSide.SELL, amount=abs(amount_diff))
-                sells.append(order)
-
-        orders = sells + buys
-        return orders
-
-    def _check_and_liquidate_delisted(
-        self, timestamp: datetime, available: List[str], prices: Dict[str, float]
-    ) -> None:
-        if not self.portfolio.positions:
-            return
-
-        delisted = [
-            symbol for symbol in self.portfolio.positions.keys()
-            if symbol not in available
-        ]
-
-        if not delisted:
-            return
-
-        orders = [
-            Order(symbol=symbol, side=OrderSide.SELL, amount=pos.amount)
-            for symbol, pos in self.portfolio.positions.items()
-            if symbol in delisted
-        ]
-
-        fills = self.executor.execute(orders, timestamp, prices)
-
-        for fill in fills:
-            try:
-                self.portfolio.apply_fill(fill)
-                self.trades.append(fill)
-            except ValueError as e:
-                print(f"Delisted liquidation failed: {e}")
+        return PerformanceMetrics(
+            total_return=0.0,
+            annualized_return=0.0,
+            daily_returns=[],
+            volatility=0.0,
+            sharpe_ratio=0.0,
+            sortino_ratio=0.0,
+            max_drawdown=0.0,
+            num_trades=0,
+            win_rate=0.0,
+            profit_factor=0.0,
+            avg_trade_pnl=0.0,
+            avg_leverage=0.0,
+            max_leverage=0.0,
+            avg_num_positions=0.0,
+            start_date=datetime.now(),
+            end_date=datetime.now(),
+            duration_days=0,
+        )
 
     def reset(self) -> None:
+        """Reset engine state for re-running."""
         self.portfolio.reset()
         self.snapshots.clear()
         self.trades.clear()
-        self._last_rebalance = None
+
+    def __repr__(self) -> str:
+        return (
+            f"BacktestEngine("
+            f"strategy={self.strategy.name}, "
+            f"capital={self.portfolio.initial_cash})"
+        )
